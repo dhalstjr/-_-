@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바로그 월이벤트 생성기</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        /* Typography */
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;800&family=Noto+Sans+SC:wght@500;700;800&family=Noto+Sans+Thai:wght@500;700;800&display=swap');
+
+        @font-face {
+            font-family: 'GmarketSansMedium';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'GmarketSansBold';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        :root {
+            --primary-color: #ffcc00;
+            --primary-hover: #e6b800;
+            --secondary-color: #e6b800;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --border-color: #dfe6e9;
+            --radius: 12px;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            --font-family: 'Pretendard', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Input Section */
+        .input-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 25px;
+            font-weight: 800;
+            color: var(--text-main);
+            border-left: 5px solid var(--secondary-color);
+            padding-left: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .label {
+            display: block;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .tip {
+            font-size: 12px;
+            color: #e00000;
+            margin-left: 10px;
+            font-weight: normal;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(255, 105, 133, 0.1);
+        }
+
+        textarea {
+            height: 250px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: block;
+            padding: 12px;
+            background: #f1f3f5;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .file-label:hover {
+            background: #e9ecef;
+            border-color: var(--text-muted);
+        }
+
+        /* 📌 파일이 첨부되었을 때의 UI 스타일 (생성하기 버튼과 동일하게 변경) */
+        .file-label.file-attached {
+            background: #fff;
+            color: #000;
+            border: 2px solid var(--primary-color);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .project-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s, background-color 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-generate {
+            background: var(--primary-color);
+            color: #000;
+        }
+
+        .btn-generate:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-download {
+            background: var(--text-main);
+            color: #fff;
+            display: none;
+        }
+
+        .btn-download:hover {
+            opacity: 0.9;
+        }
+
+        .btn-project {
+            background: #f1f3f5;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        .btn-project:hover {
+            background: #e9ecef;
+        }
+
+        /* Preview Section */
+        .preview-card {
+            position: sticky;
+            top: 40px;
+            max-height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-container {
+            background: #e9ecef;
+            border-radius: var(--radius);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        .preview-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: block;
+        }
+
+        .placeholder-text {
+            color: #555;
+            font-weight: 600;
+            margin-top: 150px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="input-card">
+            <h1>바로그 월이벤트 생성기</h1>
+
+            <div class="form-group">
+                <span class="label">상단 제목 <span class="tip">※ 불필요한 경우 공란으로 남겨 주세요.</span></span>
+                <input type="text" id="topTitle" value="바로그 구미점 4월 이벤트">
+            </div>
+
+            <div class="form-group">
+                <span class="label">이벤트 기간 <span class="tip">※ 불필요한 경우 공란으로 남겨 주세요.</span></span>
+                <input type="text" id="topDate" value="2026.04.01 - 2026.04.30">
+            </div>
+
+            <div class="form-group">
+                <span class="label">중앙 배너 제목 <span class="tip">※ --- 입력 시 다음 페이지로 구분됩니다.</span></span>
+                <textarea id="midTitle" style="height: 50px;">필러 이벤트</textarea>
+            </div>
+
+            <div class="form-group">
+                <span class="label">항목 데이터 <span class="tip">※ --- 입력 시 다음 페이지로 구분됩니다. / . 온점으로 구분합니다.</span></span>
+                <textarea id="csvData">필러. 1cc. 70만
+필러. 3cc. 199만
+보톡스. 1부위. 10만
+v라인 보톡스. . 29만
+</textarea>
+            </div>
+
+            <div class="form-group">
+                <span class="label">하단 문구 <span class="tip">※ 외국어 제작 시 각 언어로 수정해 주세요.</span></span>
+                <input type="text" id="botText" value="부가세별도">
+            </div>
+
+            <div class="file-input-wrapper">
+                <span class="label">배경 이미지</span>
+                <label for="bgInput" class="file-label" id="fileLabel">배경 이미지 파일을 선택하세요.</label>
+                <input type="file" id="bgInput" accept="image/*">
+            </div>
+
+            <div class="button-group">
+                <button class="btn-generate" onclick="generateImages()">생성하기(꼭 더블클릭!!)</button>
+                <button class="btn-download" id="downloadBtn" onclick="downloadAllImages()">전체 다운로드</button>
+            </div>
+
+            <div class="project-actions">
+                <button class="btn-project" onclick="saveProject()">💾 내용 백업 (저장)</button>
+                <button class="btn-project" onclick="document.getElementById('projectInput').click()">📂 내용
+                    불러오기</button>
+                <input type="file" id="projectInput" accept=".json" style="display: none;"
+                    onchange="loadProject(event)">
+            </div>
+
+        </div>
+
+        <div class="preview-card">
+            <div class="preview-container" id="previewContainer">
+                <div class="placeholder-text" id="placeholder">배경 이미지 선택 후 생성하기를 눌러주세요</div>
+            </div>
+            <p style="text-align:center; font-size:13px; color:#666; margin-top:10px;">이미지가 여러 장일 경우, 스크롤을 내려서 확인할 수
+                있습니다.</p>
+        </div>
+    </div>
+
+    <script>
+        let generatedImagesUrls = []; // 생성된 이미지들의 Base64 데이터를 담을 배열
+        let cachedBgImg = null;      // 캐싱된 배경 이미지 객체
+
+        /**
+         * 📌 JSON 백업 기능
+         */
+        function saveProject() {
+            const data = {
+                topTitle: document.getElementById('topTitle').value,
+                topDate: document.getElementById('topDate').value,
+                midTitle: document.getElementById('midTitle').value,
+                botText: document.getElementById('botText').value,
+                csvData: document.getElementById('csvData').value
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+            const downloadNode = document.createElement('a');
+            downloadNode.setAttribute("href", dataStr);
+            downloadNode.setAttribute("download", `이벤트_백업_${new Date().getTime()}.json`);
+            document.body.appendChild(downloadNode);
+            downloadNode.click();
+            downloadNode.remove();
+        }
+
+        function loadProject(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.topTitle !== undefined) document.getElementById('topTitle').value = data.topTitle;
+                    if (data.topDate !== undefined) document.getElementById('topDate').value = data.topDate;
+                    if (data.midTitle !== undefined) document.getElementById('midTitle').value = data.midTitle;
+                    if (data.botText !== undefined) document.getElementById('botText').value = data.botText;
+                    if (data.csvData !== undefined) document.getElementById('csvData').value = data.csvData;
+
+                    alert('내용을 성공적으로 불러왔습니다!');
+
+                    // 파일 불러올 때 배경 이미지 UI는 유지
+                } catch (err) {
+                    alert('잘못된 백업 파일입니다.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        /**
+         * 📌 설정값
+         */
+        const CONFIG = {
+            width: 1000,
+            height: 1000,
+            fonts: {
+                main: "'Pretendard', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif"
+            }
+        };
+
+        // 📌 이미지 첨부 시 UI 변경 스크립트 추가
+        document.getElementById('bgInput').addEventListener('change', function (e) {
+            const fileLabel = document.getElementById('fileLabel');
+            if (e.target.files && e.target.files.length > 0) {
+                // 파일이 선택되었을 때
+                fileLabel.textContent = e.target.files[0].name;
+                fileLabel.classList.add('file-attached');
+
+                // 배경 이미지 미리 로드 및 캐싱
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        cachedBgImg = img;
+                        console.log('배경 이미지가 캐싱되었습니다.');
+                    };
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            } else {
+                // 파일 선택이 취소되었을 때
+                fileLabel.textContent = '배경 이미지 파일을 선택하세요';
+                fileLabel.classList.remove('file-attached');
+                cachedBgImg = null;
+            }
+        });
+
+        /**
+         * 📌 다중 이미지 생성 트리거
+         */
+        async function generateImages() {
+            if (!cachedBgImg) {
+                alert('배경 이미지를 먼저 선택해주세요!');
+                return;
+            }
+
+            const rawData = document.getElementById('csvData').value;
+            const blocks = rawData.split('---').map(b => b.trim()).filter(b => b.length > 0);
+
+            if (blocks.length === 0) {
+                alert('입력된 항목 데이터가 없습니다.');
+                return;
+            }
+
+            await document.fonts.ready;
+
+            const previewContainer = document.getElementById('previewContainer');
+            previewContainer.innerHTML = '';
+            generatedImagesUrls = [];
+
+            const titleRaw = document.getElementById('midTitle').value;
+            const titles = titleRaw.split('---').map(t => t.trim());
+
+            const botTextRaw = document.getElementById('botText').value;
+            const botTexts = botTextRaw.split('---').map(t => t.trim());
+
+            blocks.forEach((blockText, index) => {
+                const groups = parseCSV(blockText);
+                if (groups.length > 0) {
+                    // 데이터가 부족하면 마지막 데이터를 사용
+                    const title = titles[index] || titles[titles.length - 1] || "";
+                    const botText = botTexts[index] || botTexts[botTexts.length - 1] || "";
+                    const dataUrl = drawSingleCanvas(cachedBgImg, groups, title, botText);
+                    generatedImagesUrls.push(dataUrl);
+
+                    const imgEl = document.createElement('img');
+                    imgEl.src = dataUrl;
+                    previewContainer.appendChild(imgEl);
+                }
+            });
+
+            document.getElementById('downloadBtn').style.display = 'block';
+        }
+
+        /**
+         * 📌 다중 이미지 일괄 다운로드 (ZIP)
+         */
+        function downloadAllImages() {
+            if (generatedImagesUrls.length === 0) return;
+
+            if (generatedImagesUrls.length === 1) {
+                const link = document.createElement('a');
+                link.download = `event-${new Date().getTime()}.jpg`;
+                link.href = generatedImagesUrls[0];
+                link.click();
+            } else {
+                const zip = new JSZip();
+                generatedImagesUrls.forEach((dataUrl, index) => {
+                    const base64Data = dataUrl.replace(/^data:image\/(png|jpeg);base64,/, "");
+                    zip.file(`event_${index + 1}.jpg`, base64Data, { base64: true });
+                });
+                zip.generateAsync({ type: "blob" }).then(function (content) {
+                    saveAs(content, `이벤트패키지_${new Date().getTime()}.zip`);
+                });
+            }
+        }
+
+        /**
+         * 📌 숫자 데이터 콤마 포맷팅 헬퍼
+         */
+        function formatPrice(numStr) {
+            if (!numStr) return "";
+            // 기존 콤마 제거 후 숫자 여부 확인 (점(.)은 이제 구분자이므로 콤마(,)만 제거)
+            const clean = numStr.replace(/,/g, '');
+            if (!isNaN(clean) && clean.trim() !== "") {
+                return Number(clean).toLocaleString('ko-KR');
+            }
+            return numStr;
+        }
+
+        // CSV 텍스트 파싱 로직
+        function parseCSV(blockText) {
+            const lines = blockText.split('\n').filter(l => l.trim().length > 0 || l.includes('.'));
+            const groups = [];
+            let currentGroup = null;
+            let pendingPrefix = "";
+
+            lines.forEach(line => {
+                const parts = line.split('.').map(s => s.trim());
+
+                // 콤마가 2개 미만이면(즉, 항목, 단위, 금액 형식이 아니면) 항목명의 일부로 간주
+                if (parts.length < 3) {
+                    pendingPrefix += line + "\n";
+                    return;
+                }
+
+                // 가장 뒤의 두 개를 각각 금액과 단위로 처리
+                const price = parts.pop();
+                const unit = parts.pop();
+                const item = pendingPrefix + parts.join('.').trim();
+                pendingPrefix = "";
+
+                if (!currentGroup || currentGroup.item !== item) {
+                    currentGroup = { item, rows: [] };
+                    groups.push(currentGroup);
+                }
+                currentGroup.rows.push({ unit, price });
+            });
+            return groups;
+        }
+
+        // 텍스트 줄바꿈 계산 로직
+        function wrapTextChar(ctx, text, maxWidth) {
+            const resultLines = [];
+            const paragraphs = text.split('\n');
+
+            paragraphs.forEach(paragraph => {
+                let currentLine = '';
+                for (let i = 0; i < paragraph.length; i++) {
+                    let char = paragraph[i];
+                    let testLine = currentLine + char;
+                    if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+                        resultLines.push(currentLine);
+                        currentLine = char;
+                    } else {
+                        currentLine = testLine;
+                    }
+                }
+                resultLines.push(currentLine);
+            });
+            return resultLines;
+        }
+
+        // 둥근 사각형 그리기 로직
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath(); ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y); ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius); ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height); ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius); ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath(); ctx.fill();
+        }
+
+        /**
+         * 📌 단일 이미지 그리기 함수
+         */
+        function drawSingleCanvas(bgImg, groups, title, botText) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = CONFIG.width;
+            canvas.height = CONFIG.height;
+
+            const startX = 105, endX = 895;
+            const unitPriceGap = 25; // 단위 박스와 금액 사이의 간격 (조절 가능)
+
+            // 3. 총 높이 계산 및 여백 보정
+            const groupRowGap = 50;
+            const textLineGap = 40;
+            const whitePadding = 15;
+            const itemHalfHeight = 24;
+
+            let totalListHeight = 0;
+            ctx.font = `700 27px ${CONFIG.fonts.main}`;
+            ctx.letterSpacing = "-1px";
+            groups.forEach((group, index) => {
+                // --- 해당 그룹 내 가격들의 최대 너비 계산 ---
+                group.localMaxPriceWidth = 0;
+                group.rows.forEach(r => {
+                    const match = r.price.match(/([\d.,]+)(.*)/);
+                    const numPart = match ? formatPrice(match[1]) : r.price;
+                    const suffixPart = match ? match[2].trim() : '';
+                    ctx.font = `800 54px ${CONFIG.fonts.main}`;
+                    ctx.letterSpacing = "-3px";
+                    const numW = ctx.measureText(numPart).width;
+                    ctx.font = `700 32px ${CONFIG.fonts.main}`;
+                    ctx.letterSpacing = "-1px";
+                    const sufW = ctx.measureText(suffixPart).width;
+                    const rowPriceW = numW + sufW + 3;
+                    if (rowPriceW > group.localMaxPriceWidth) group.localMaxPriceWidth = rowPriceW;
+                });
+
+                // --- 각 그룹 내 단위 박스 최대 너비 별도 계산 ---
+                group.maxUnitW = 0;
+                ctx.font = `800 27px ${CONFIG.fonts.main}`;
+                group.rows.forEach(r => {
+                    if (r.unit) {
+                        const w = ctx.measureText(r.unit).width + 30; // 패딩 포함
+                        if (w > group.maxUnitW) group.maxUnitW = w;
+                    }
+                });
+
+                // --- 줄바꿈 너비 결정 (해당 그룹의 가격 경계 기준) ---
+                const groupUnitRightBoundary = endX - group.localMaxPriceWidth - unitPriceGap;
+                let currentMaxTextWidth;
+                if (group.maxUnitW > 0) {
+                    currentMaxTextWidth = (groupUnitRightBoundary - group.maxUnitW) - startX - 15;
+                } else {
+                    currentMaxTextWidth = groupUnitRightBoundary - startX - 5; // 금액 바로 앞까지 (15 -> 5)
+                }
+
+                group.lines = wrapTextChar(ctx, group.item, currentMaxTextWidth);
+
+                let priceSpan = (group.rows.length - 1) * groupRowGap;
+                let textSpan = (group.lines.length - 1) * textLineGap;
+                group.heightSpan = Math.max(priceSpan, textSpan);
+                totalListHeight += group.heightSpan;
+                if (index < groups.length - 1) totalListHeight += 65;
+            });
+
+            // 3.5. 배너 제목 줄바꿈 및 높이 계산
+            ctx.font = `49px 'GmarketSansBold', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif`;
+            ctx.letterSpacing = "-2px";
+            const titleLines = wrapTextChar(ctx, title, 800);
+            const titleLineHeight = 58;
+            const bannerHeight = Math.max(95, titleLines.length * titleLineHeight + 30);
+
+            const whiteBoxHeight = whitePadding + itemHalfHeight + totalListHeight + itemHalfHeight + whitePadding;
+            const totalEventBoxHeight = bannerHeight + whiteBoxHeight;
+            const eventBoxStartY = 500 - (totalEventBoxHeight / 2);
+
+            // 4. 배경 이미지
+            const imgRatio = bgImg.width / bgImg.height;
+            ctx.drawImage(bgImg, 0, (1000 - (1000 / imgRatio)) / 2, 1000, 1000 / imgRatio);
+
+            // 5. 상단 제목/기간
+            ctx.textBaseline = "alphabetic";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#ff6985";
+            ctx.font = `27px 'GmarketSansMedium', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif`;
+            ctx.letterSpacing = "-1px";
+            ctx.fillText(document.getElementById('topTitle').value, 500, 80);
+            ctx.fillText(document.getElementById('topDate').value, 500, 115);
+
+            ctx.fillStyle = "#ff6985";
+            ctx.fillRect(60, eventBoxStartY, 880, bannerHeight);
+            ctx.fillStyle = "white";
+            ctx.font = `49px 'GmarketSansBold', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif`;
+            ctx.letterSpacing = "-2px";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            const titleStartY = eventBoxStartY + (bannerHeight / 2) - ((titleLines.length - 1) * titleLineHeight) / 2;
+            titleLines.forEach((line, i) => {
+                ctx.fillText(line, 500, titleStartY + (i * titleLineHeight));
+            });
+
+            // 7. 흰색 박스
+            const whiteBoxTop = eventBoxStartY + bannerHeight;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.fillRect(60, whiteBoxTop, 880, whiteBoxHeight);
+            ctx.strokeStyle = "#ff6985"; ctx.lineWidth = 2;
+            ctx.strokeRect(60 + 1, whiteBoxTop, 880 - 2, whiteBoxHeight - 1);
+
+            // 8. 내용 리스트
+            ctx.textBaseline = "middle";
+            let currentY = whiteBoxTop + whitePadding + itemHalfHeight;
+
+            groups.forEach((group, index) => {
+                const groupCenterY = currentY + group.heightSpan / 2;
+                ctx.textAlign = "left"; ctx.fillStyle = "black";
+                ctx.font = `700 27px ${CONFIG.fonts.main}`;
+                ctx.letterSpacing = "-1px";
+                let textStartY = groupCenterY - ((group.lines.length - 1) * textLineGap) / 2;
+                group.lines.forEach((line, i) => ctx.fillText(line, startX, textStartY + (i * textLineGap)));
+
+                let priceStartY = groupCenterY - ((group.rows.length - 1) * groupRowGap) / 2;
+                group.rows.forEach((row, rowIndex) => {
+                    const rowCenterY = priceStartY + (rowIndex * groupRowGap);
+
+                    // 단위 캡슐
+                    const groupUnitRightBoundary = endX - group.localMaxPriceWidth - unitPriceGap;
+                    if (row.unit) {
+                        ctx.font = `800 27px ${CONFIG.fonts.main}`;
+                        ctx.letterSpacing = "0px";
+                        const unitW = group.maxUnitW; // 해당 그룹 내 최대 너비 사용
+                        const boxX = groupUnitRightBoundary - unitW;
+
+                        ctx.fillStyle = "#ff6985";
+                        roundRect(ctx, boxX, rowCenterY - 24, unitW, 48, 14);
+                        ctx.textAlign = "center"; ctx.fillStyle = "white";
+                        ctx.fillText(row.unit, boxX + unitW / 2, rowCenterY + 2);
+                    }
+
+                    // 금액 및 단위 텍스트
+                    const match = row.price.match(/([\d.,]+)(.*)/);
+                    const priceNum = match ? formatPrice(match[1]) : row.price;
+                    const priceSuffix = match ? match[2].trim() : '';
+
+                    ctx.font = `700 32px ${CONFIG.fonts.main}`;
+                    ctx.letterSpacing = "-1px";
+                    const suffixWidth = ctx.measureText(priceSuffix).width;
+
+                    ctx.textBaseline = "alphabetic";
+                    const baselineY = rowCenterY + 18;
+
+                    ctx.textAlign = "right";
+                    ctx.fillStyle = "black";
+                    ctx.fillText(priceSuffix, endX, baselineY);
+
+                    ctx.fillStyle = "#ff6985";
+                    ctx.font = `800 54px ${CONFIG.fonts.main}`;
+                    ctx.letterSpacing = "-3px";
+                    ctx.fillText(priceNum, endX - suffixWidth - 3, baselineY); // 단위 전 여백 3px 적용
+
+                    ctx.textBaseline = "middle";
+                });
+
+                if (index < groups.length - 1) {
+                    const lineY = currentY + group.heightSpan + 32.5;
+                    ctx.beginPath(); ctx.moveTo(startX, lineY); ctx.lineTo(endX, lineY);
+                    ctx.strokeStyle = "#ff6985"; ctx.lineWidth = 1; ctx.stroke();
+                    currentY = lineY + 32.5;
+                }
+            });
+
+            // 9. 하단 문구
+            ctx.textBaseline = "alphabetic";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#ff6985";
+            ctx.font = `23px 'GmarketSansMedium', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif`;
+            ctx.letterSpacing = "0px";
+            ctx.fillText(botText, 500, 975);
+
+            return canvas.toDataURL('image/jpeg', 0.95);
+        }
+
+        // Ctrl + S 단축키 추가
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                generateImages();
+            }
+        });
+    </script>
+</body>
+
+</html>
