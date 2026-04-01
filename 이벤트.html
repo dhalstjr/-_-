@@ -1,1079 +1,780 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>바로그 월이벤트 생성기</title>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;800&family=Noto+Sans+SC:wght@500;700;800&family=Noto+Sans+Thai:wght@500;700;800&display=swap');
-
-        @font-face {
-            font-family: 'GmarketSansMedium';
-            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
-            font-weight: normal; font-style: normal;
-        }
-        @font-face {
-            font-family: 'GmarketSansBold';
-            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
-            font-weight: normal; font-style: normal;
-        }
+        @font-face { font-family:'GmarketSansMedium'; src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff'); }
+        @font-face { font-family:'GmarketSansBold';   src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff')   format('woff'); }
 
         :root {
             --primary: #ff6985;
-            --primary-hover: #e84d6c;
-            --primary-light: rgba(255, 105, 133, 0.08);
+            --primary-d: #e84d6c;
+            --primary-light: rgba(255,105,133,.08);
             --accent: #ffcc00;
-            --accent-hover: #e6b800;
-            --bg: #f4f5f8;
-            --card-bg: #ffffff;
-            --text-main: #1e2432;
-            --text-muted: #8a92a6;
+            --accent-d: #e6b800;
+            --bg: #f2f4f8;
+            --card: #fff;
+            --text: #1e2432;
+            --muted: #8a92a6;
             --border: #e4e8f0;
-            --radius: 14px;
-            --radius-sm: 8px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.07);
-            --shadow-lg: 0 20px 50px rgba(0,0,0,0.13);
-            --font: 'Pretendard', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif;
+            --group-bg: #f8f9fc;
+            --r: 14px;
+            --rs: 8px;
+            --shadow: 0 4px 24px rgba(0,0,0,.07);
+            --shadow-lg: 0 20px 50px rgba(0,0,0,.13);
+            --font: 'Pretendard','Noto Sans JP','Noto Sans SC','Noto Sans Thai',sans-serif;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;padding:36px 20px;}
 
-        body {
-            font-family: var(--font);
-            background: var(--bg);
-            color: var(--text-main);
-            line-height: 1.6;
-            padding: 36px 20px;
-        }
+        /* ─── Layout ─── */
+        .wrap{max-width:1380px;margin:0 auto;display:grid;grid-template-columns:1fr 1.1fr;gap:32px;}
+        @media(max-width:1060px){.wrap{grid-template-columns:1fr;}}
 
-        /* ===== Layout ===== */
-        .container {
-            max-width: 1340px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1.1fr;
-            gap: 32px;
-        }
-        @media (max-width: 1024px) {
-            .container { grid-template-columns: 1fr; }
-        }
+        /* ─── Card ─── */
+        .card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:28px;}
 
-        /* ===== Section Header ===== */
-        .app-header {
-            margin-bottom: 28px;
-        }
-        .app-header h1 {
-            font-size: 22px;
-            font-weight: 800;
-            color: var(--text-main);
-            border-left: 4px solid var(--primary);
-            padding-left: 14px;
-            line-height: 1.3;
-        }
-        .app-header p {
-            margin-top: 6px;
-            margin-left: 18px;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
+        /* ─── Header ─── */
+        .app-head{margin-bottom:26px;}
+        .app-head h1{font-size:21px;font-weight:800;border-left:4px solid var(--primary);padding-left:13px;line-height:1.3;}
+        .app-head p{margin-top:5px;margin-left:17px;font-size:12px;color:var(--muted);}
 
-        /* ===== Card ===== */
-        .card {
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 28px;
-        }
+        /* ─── Section label ─── */
+        .sec-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+            margin-bottom:14px;padding-bottom:9px;border-bottom:1px solid var(--border);}
 
-        /* ===== Form ===== */
-        .section-label {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            margin-bottom: 16px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-        }
+        /* ─── Form basics ─── */
+        .fg{margin-bottom:14px;}
+        .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .flabel{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;}
+        .flabel .tip{font-weight:400;color:var(--primary);margin-left:5px;}
 
-        .form-group { margin-bottom: 16px; }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        input[type=text]{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:var(--rs);
+            font-size:13px;font-family:inherit;color:var(--text);background:#fafbfc;transition:border-color .18s,box-shadow .18s;}
+        input[type=text]:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(255,105,133,.12);background:#fff;}
 
-        label.field-label {
-            display: block;
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-        label.field-label .tip {
-            font-weight: 400;
-            color: var(--primary);
-            margin-left: 6px;
-        }
+        .file-lbl{display:flex;align-items:center;gap:9px;padding:10px 13px;background:#fafbfc;
+            border:1.5px dashed var(--border);border-radius:var(--rs);cursor:pointer;
+            font-size:13px;font-weight:600;color:var(--muted);transition:all .18s;}
+        .file-lbl:hover{background:#f0f2f7;border-color:var(--primary);}
+        .file-lbl.attached{background:#fff;border-style:solid;border-color:var(--primary);color:var(--primary);}
+        input[type=file]{display:none;}
 
-        input[type="text"] {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-family: inherit;
-            color: var(--text-main);
-            background: #fafbfc;
-            transition: border-color 0.18s, box-shadow 0.18s;
-        }
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(255,105,133,0.12);
-            background: #fff;
-        }
+        /* ─── Banner Card ─── */
+        .banners-sec{margin-top:22px;}
+        .banner-card{border:1.5px solid var(--border);border-radius:var(--rs);margin-bottom:14px;overflow:hidden;transition:box-shadow .2s;}
+        .banner-card:focus-within{box-shadow:0 0 0 3px rgba(255,105,133,.12);border-color:var(--primary);}
 
-        .file-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 11px 14px;
-            background: #fafbfc;
-            border: 1.5px dashed var(--border);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-muted);
-            transition: all 0.18s;
-        }
-        .file-label:hover { background: #f0f2f7; border-color: var(--primary); }
-        .file-label.attached { background: #fff; border-color: var(--primary); color: var(--primary); border-style: solid; }
-        .file-label .file-icon { font-size: 18px; }
-        input[type="file"] { display: none; }
+        .banner-hd{display:flex;align-items:center;gap:9px;padding:9px 13px;background:var(--primary-light);border-bottom:1.5px solid var(--border);}
+        .banner-badge{background:var(--primary);color:#fff;font-size:10px;font-weight:800;
+            width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+        .banner-hd input[type=text]{flex:1;border:none;background:transparent;padding:3px 5px;font-size:14px;font-weight:700;color:var(--text);}
+        .banner-hd input[type=text]:focus{outline:none;box-shadow:none;}
+        .btn-del-banner{background:none;border:1.5px solid #f0b3bb;color:var(--primary);border-radius:6px;
+            padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;flex-shrink:0;}
+        .btn-del-banner:hover{background:var(--primary);color:#fff;}
 
-        /* ===== Banners Section ===== */
-        .banners-section { margin-top: 24px; }
+        .banner-body{padding:10px 13px;display:flex;flex-direction:column;gap:10px;}
+        .banner-ft{padding:6px 13px 11px;display:flex;}
 
-        .banner-card {
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            margin-bottom: 16px;
-            overflow: hidden;
-            transition: box-shadow 0.2s;
-        }
-        .banner-card:focus-within {
-            box-shadow: 0 0 0 3px rgba(255,105,133,0.12);
-            border-color: var(--primary);
-        }
+        /* ─── Item Group ─── */
+        .group-card{background:var(--group-bg);border:1.5px solid var(--border);border-radius:var(--rs);overflow:hidden;}
+        .group-hd{display:flex;align-items:center;gap:8px;padding:7px 11px;background:#eef0f6;border-bottom:1px solid var(--border);}
+        .group-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0;}
+        .group-hd textarea{flex:1;border:none;background:transparent;padding:2px 4px;
+            font-size:13px;font-weight:700;color:var(--text);font-family:inherit;
+            resize:none;overflow:hidden;min-height:28px;line-height:1.5;}
+        .group-hd textarea:focus{outline:none;}
+        .btn-del-group{background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;transition:color .15s;padding:2px 4px;flex-shrink:0;}
+        .btn-del-group:hover{color:var(--primary);}
 
-        .banner-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            background: var(--primary-light);
-            border-bottom: 1.5px solid var(--border);
-        }
-        .banner-header .banner-index {
-            background: var(--primary);
-            color: #fff;
-            font-size: 11px;
-            font-weight: 800;
-            width: 22px; height: 22px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
-        .banner-header input[type="text"] {
-            flex: 1;
-            border: none;
-            background: transparent;
-            padding: 4px 6px;
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-        .banner-header input[type="text"]:focus {
-            box-shadow: none;
-            outline: none;
-        }
-        .btn-del-banner {
-            background: none;
-            border: 1.5px solid #f0b3bb;
-            color: var(--primary);
-            border-radius: 6px;
-            padding: 4px 10px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.15s;
-            flex-shrink: 0;
-        }
-        .btn-del-banner:hover { background: var(--primary); color: #fff; }
+        .options-list{padding:8px 11px;display:flex;flex-direction:column;gap:7px;}
+        .group-ft{padding:5px 11px 9px;}
 
-        /* ===== Item Rows ===== */
-        .banner-items {
-            padding: 12px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+        /* ─── Option Row ─── */
+        .opt-row{display:grid;gap:7px;align-items:end;}
+        /* 자동모드: 캡슐 | 방식토글 | 숫자 | 단위텍 | del  */
+        .opt-row.mode-auto  {grid-template-columns: 0.8fr 80px 0.7fr 0.9fr auto;}
+        /* 직접모드: 캡슐 | 방식토글 | 통합텍스트(span 2) | del */
+        .opt-row.mode-direct{grid-template-columns: 0.8fr 80px 1fr auto;}
 
-        .item-row {
-            display: grid;
-            grid-template-columns: 1.6fr 0.7fr 0.9fr 0.85fr auto;
-            gap: 8px;
-            align-items: start;
-        }
+        .opt-field{display:flex;flex-direction:column;gap:3px;}
+        .opt-tag{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.04em;}
 
-        .item-field {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-        .item-field .field-tag {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--text-muted);
-            letter-spacing: 0.05em;
-        }
+        .opt-row input[type=text]{padding:7px 9px;font-size:12px;}
+        .capsule-inp{background:#fff0f3;border-color:#f8c4cc !important;text-align:center;font-weight:700;color:var(--primary);}
+        .capsule-inp:focus{border-color:var(--primary) !important;}
+        .price-num-inp{color:var(--primary);font-weight:800;font-size:13px !important;}
 
-        .item-row textarea {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1.5px solid var(--border);
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: inherit;
-            color: var(--text-main);
-            background: #fafbfc;
-            resize: none;
-            overflow: hidden;
-            min-height: 36px;
-            line-height: 1.5;
-            transition: border-color 0.18s;
-        }
-        .item-row textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: #fff;
-        }
-        .item-row input[type="text"] {
-            padding: 8px 10px;
-            font-size: 13px;
-        }
+        /* 방식 토글 */
+        .mode-toggle{display:flex;border:1.5px solid var(--border);border-radius:6px;overflow:hidden;height:36px;}
+        .mode-toggle button{flex:1;border:none;background:#fafbfc;font-size:11px;font-weight:700;color:var(--muted);
+            cursor:pointer;transition:all .15s;padding:0 4px;}
+        .mode-toggle button.active{background:var(--primary);color:#fff;}
+        .mode-toggle button:hover:not(.active){background:#f0f2f7;}
 
-        .capsule-input {
-            padding: 8px 10px;
-            background: #fff0f3;
-            border-color: #f8c4cc !important;
-            text-align: center;
-            font-weight: 700;
-            color: var(--primary);
-        }
-        .capsule-input:focus { border-color: var(--primary) !important; }
+        .btn-del-opt{background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;transition:color .15s;padding:4px 2px;}
+        .btn-del-opt:hover{color:var(--primary);}
 
-        .price-num-input {
-            color: var(--primary);
-            font-weight: 800;
-            font-size: 14px !important;
-        }
+        /* Add buttons */
+        .btn-add-opt{background:none;border:1.5px dashed #c0c9d8;border-radius:6px;color:var(--muted);
+            font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .15s;
+            display:flex;align-items:center;gap:5px;}
+        .btn-add-opt:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light);}
 
-        .btn-del-item {
-            background: none;
-            border: none;
-            color: #ccc;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 6px 4px;
-            margin-top: 16px;
-            line-height: 1;
-            transition: color 0.15s;
-        }
-        .btn-del-item:hover { color: var(--primary); }
+        .btn-add-group{background:none;border:1.5px dashed #c0c9d8;border-radius:var(--rs);color:var(--muted);
+            font-size:13px;font-weight:600;padding:8px 14px;cursor:pointer;width:100%;transition:all .15s;
+            display:flex;align-items:center;gap:6px;}
+        .btn-add-group:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light);}
 
-        /* Banner footer */
-        .banner-footer {
-            padding: 8px 14px 12px;
-            display: flex;
-        }
-        .btn-add-item {
-            background: none;
-            border: 1.5px dashed #c0c9d8;
-            border-radius: 6px;
-            color: var(--text-muted);
-            font-size: 13px;
-            font-weight: 600;
-            padding: 7px 14px;
-            cursor: pointer;
-            transition: all 0.15s;
-            display: flex; align-items: center; gap: 6px;
-        }
-        .btn-add-item:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+        .btn-add-banner{width:100%;padding:11px;background:none;border:2px dashed #c0c9d8;border-radius:var(--rs);
+            font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .18s;
+            display:flex;align-items:center;justify-content:center;gap:7px;}
+        .btn-add-banner:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light);}
 
-        /* ===== Add Banner Button ===== */
-        .btn-add-banner {
-            width: 100%;
-            padding: 12px;
-            background: none;
-            border: 2px dashed #c0c9d8;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.18s;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-add-banner:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: var(--primary-light);
-        }
+        /* ─── Action ─── */
+        .action-sec{margin-top:22px;}
+        .btn-row{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px;}
+        .btn-proj-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+        button{font-family:inherit;cursor:pointer;border:none;transition:all .15s;}
+        button:active{transform:scale(.98);}
+        .btn-gen{background:var(--accent);color:#000;border-radius:var(--rs);padding:14px;font-size:15px;font-weight:800;letter-spacing:-.3px;}
+        .btn-gen:hover{background:var(--accent-d);}
+        .btn-dl{background:var(--text);color:#fff;border-radius:var(--rs);padding:14px;font-size:14px;font-weight:700;display:none;}
+        .btn-dl:hover{opacity:.85;}
+        .btn-proj{background:#f4f5f8;color:var(--text);border:1.5px solid var(--border);border-radius:var(--rs);padding:10px;font-size:13px;font-weight:700;}
+        .btn-proj:hover{background:#e9ecf2;}
 
-        /* ===== Action Buttons ===== */
-        .action-section { margin-top: 24px; }
-        .btn-row {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .btn-project-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        button { font-family: inherit; cursor: pointer; border: none; transition: all 0.15s; }
-        button:active { transform: scale(0.98); }
-
-        .btn-generate {
-            background: var(--accent);
-            color: #000;
-            border-radius: var(--radius-sm);
-            padding: 15px;
-            font-size: 15px;
-            font-weight: 800;
-            letter-spacing: -0.3px;
-        }
-        .btn-generate:hover { background: var(--accent-hover); }
-
-        .btn-download {
-            background: var(--text-main);
-            color: #fff;
-            border-radius: var(--radius-sm);
-            padding: 15px;
-            font-size: 14px;
-            font-weight: 700;
-            display: none;
-        }
-        .btn-download:hover { opacity: 0.85; }
-
-        .btn-project {
-            background: #f4f5f8;
-            color: var(--text-main);
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 11px;
-            font-size: 13px;
-            font-weight: 700;
-        }
-        .btn-project:hover { background: #e9ecf2; }
-
-        /* ===== Preview ===== */
-        .preview-card {
-            position: sticky;
-            top: 36px;
-            max-height: calc(100vh - 72px);
-            display: flex;
-            flex-direction: column;
-        }
-        .preview-header {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-        }
-        .preview-scroll {
-            background: #dde1ea;
-            border-radius: var(--radius);
-            padding: 20px;
-            overflow-y: auto;
-            box-shadow: var(--shadow-lg);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            align-items: center;
-            flex: 1;
-            min-height: 400px;
-        }
-        .preview-scroll img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 10px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.18);
-        }
-        .preview-placeholder {
-            color: #888;
-            font-size: 14px;
-            font-weight: 600;
-            margin: auto;
-            text-align: center;
-            padding: 60px 20px;
-            line-height: 2;
-        }
-        .preview-hint {
-            text-align: center;
-            font-size: 12px;
-            color: #999;
-            margin-top: 10px;
-        }
+        /* ─── Preview ─── */
+        .prev-card{position:sticky;top:36px;max-height:calc(100vh - 72px);display:flex;flex-direction:column;}
+        .prev-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+            margin-bottom:11px;padding-bottom:9px;border-bottom:1px solid var(--border);}
+        .prev-scroll{background:#dde1ea;border-radius:var(--r);padding:20px;overflow-y:auto;
+            box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:20px;align-items:center;flex:1;min-height:400px;}
+        .prev-scroll img{max-width:100%;height:auto;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.18);}
+        .prev-ph{color:#888;font-size:14px;font-weight:600;margin:auto;text-align:center;padding:60px 20px;line-height:2;}
+        .prev-hint{text-align:center;font-size:12px;color:#999;margin-top:9px;}
     </style>
 </head>
-
 <body>
-<div class="container">
+<div class="wrap">
 
     <!-- ===== 입력 패널 ===== -->
     <div class="card">
-        <div class="app-header">
+        <div class="app-head">
             <h1>바로그 월이벤트 생성기</h1>
-            <p>배너와 항목을 직접 입력해 이미지를 생성하세요</p>
+            <p>배너 &gt; 항목 그룹 &gt; 옵션 3단계로 구조화 입력</p>
         </div>
 
-        <!-- 기본 정보 -->
-        <div class="section-label">📋 기본 정보</div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label class="field-label" for="topTitle">상단 제목 <span class="tip">공란 시 생략</span></label>
+        <div class="sec-lbl">📋 기본 정보</div>
+        <div class="frow">
+            <div class="fg">
+                <label class="flabel" for="topTitle">상단 제목 <span class="tip">공란 시 생략</span></label>
                 <input type="text" id="topTitle" value="바로그 구미점 4월 이벤트">
             </div>
-            <div class="form-group">
-                <label class="field-label" for="topDate">이벤트 기간 <span class="tip">공란 시 생략</span></label>
+            <div class="fg">
+                <label class="flabel" for="topDate">이벤트 기간 <span class="tip">공란 시 생략</span></label>
                 <input type="text" id="topDate" value="2026.04.01 - 2026.04.30">
             </div>
         </div>
-
-        <div class="form-group">
-            <label class="field-label" for="botText">하단 문구 <span class="tip">외국어 제작 시 해당 언어로 수정</span></label>
+        <div class="fg">
+            <label class="flabel" for="botText">하단 문구 <span class="tip">외국어 제작 시 해당 언어로 수정</span></label>
             <input type="text" id="botText" value="부가세별도">
         </div>
-
-        <div class="form-group">
-            <label class="field-label">배경 이미지</label>
-            <label for="bgInput" class="file-label" id="fileLabel">
-                <span class="file-icon">🖼️</span>
-                <span id="fileLabelText">배경 이미지 파일을 선택하세요</span>
+        <div class="fg">
+            <label class="flabel">배경 이미지</label>
+            <label for="bgInput" class="file-lbl" id="fileLabel">
+                <span>🖼️</span><span id="fileLabelText">배경 이미지 파일을 선택하세요</span>
             </label>
             <input type="file" id="bgInput" accept="image/*">
         </div>
 
         <!-- 배너 섹션 -->
-        <div class="banners-section">
-            <div class="section-label">🏷️ 배너 및 항목 관리</div>
+        <div class="banners-sec">
+            <div class="sec-lbl">🏷️ 배너 관리 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted);">배너 → 항목 그룹 → 옵션 순으로 추가하세요</span></div>
             <div id="bannersContainer"></div>
-
-            <button class="btn-add-banner" onclick="addBanner()">
-                <span>➕</span> 배너 추가
-            </button>
+            <button class="btn-add-banner" onclick="addBanner()">➕ 배너 추가</button>
         </div>
 
-        <!-- 액션 버튼 -->
-        <div class="action-section">
+        <!-- 액션 -->
+        <div class="action-sec">
             <div class="btn-row">
-                <button class="btn-generate" onclick="generateImages()">⚡ 생성하기 (Ctrl+S)</button>
-                <button class="btn-download" id="downloadBtn" onclick="downloadAllImages()">⬇ 전체 다운로드</button>
+                <button class="btn-gen" onclick="generateImages()">⚡ 생성하기 (Ctrl+S)</button>
+                <button class="btn-dl" id="downloadBtn" onclick="downloadAllImages()">⬇ 전체 다운로드</button>
             </div>
-            <div class="btn-project-row">
-                <button class="btn-project" onclick="saveProject()">💾 내용 백업 (저장)</button>
-                <button class="btn-project" onclick="document.getElementById('projectInput').click()">📂 내용 불러오기</button>
+            <div class="btn-proj-row">
+                <button class="btn-proj" onclick="saveProject()">💾 내용 백업 (저장)</button>
+                <button class="btn-proj" onclick="document.getElementById('projectInput').click()">📂 내용 불러오기</button>
                 <input type="file" id="projectInput" accept=".json" style="display:none;" onchange="loadProject(event)">
             </div>
         </div>
     </div>
 
-    <!-- ===== 미리보기 패널 ===== -->
-    <div class="preview-card">
-        <div class="preview-header">🖼 미리보기</div>
-        <div class="preview-scroll" id="previewContainer">
-            <div class="preview-placeholder" id="placeholder">
+    <!-- ===== 미리보기 ===== -->
+    <div class="prev-card">
+        <div class="prev-hd">🖼 미리보기</div>
+        <div class="prev-scroll" id="previewContainer">
+            <div class="prev-ph" id="placeholder">
                 배경 이미지를 선택한 뒤<br>
-                배너와 항목을 입력하고<br>
+                배너·그룹·옵션을 입력하고<br>
                 <strong>생성하기</strong>를 눌러주세요
             </div>
         </div>
-        <p class="preview-hint">이미지가 여러 장일 경우 스크롤하여 확인하세요</p>
+        <p class="prev-hint">이미지가 여러 장일 경우 스크롤하여 확인하세요</p>
     </div>
-
 </div>
 
 <script>
-    /* ========================================
-       STATE
-    ======================================== */
-    /**
-     * eventData structure:
-     * [
-     *   {
-     *     title: "배너 제목",
-     *     items: [
-     *       { name: "항목명(줄바꿈 가능)", capsule: "단위 캡슐", priceNum: "강조 숫자", priceSuffix: "단위 텍스트" },
-     *       ...
-     *     ]
-     *   },
-     *   ...
-     * ]
-     */
-    let eventData = [];
-    let generatedImagesUrls = [];
-    let cachedBgImg = null;
-    let bannerCount = 0;
+/* =====================================================
+   DATA STRUCTURE (version 3)
+   eventData = [
+     {                             // Banner
+       id, title,
+       groups: [
+         {                         // Item Group
+           gid, name,              // 항목명 (줄바꿈 가능)
+           options: [
+             {                     // Option row
+               oid,
+               capsule,            // 단위 캡슐
+               priceMode,          // 'auto' | 'direct'
+               priceNum,           // [auto] 강조 숫자
+               priceSuffix,        // [auto] 단위 텍스트
+               priceDirect         // [direct] 전체 텍스트
+             }, ...
+           ]
+         }, ...
+       ]
+     }, ...
+   ]
+===================================================== */
 
-    const CONFIG = {
-        width: 1000,
-        height: 1000,
-        fonts: {
-            main: "'Pretendard', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif",
-            display: "'GmarketSansBold', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif",
-            displayMed: "'GmarketSansMedium', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif"
-        }
-    };
+let eventData = [];
+let generatedImagesUrls = [];
+let cachedBgImg = null;
 
-    /* ========================================
-       UI — 배너/항목 동적 생성
-    ======================================== */
-    function addBanner(bannerData = null) {
-        bannerCount++;
-        const id = bannerCount;
-        const title = bannerData ? bannerData.title : `배너 ${id}`;
+let _bid = 0, _gid = 0, _oid = 0;
 
-        const container = document.getElementById('bannersContainer');
-        const card = document.createElement('div');
-        card.className = 'banner-card';
-        card.dataset.bannerId = id;
-
-        card.innerHTML = `
-            <div class="banner-header">
-                <div class="banner-index">${id}</div>
-                <input type="text" placeholder="배너 제목 (예: 필러 이벤트)" value="${escHtml(title)}" oninput="syncBannerTitle(${id}, this.value)">
-                <button class="btn-del-banner" onclick="deleteBanner(${id})">❌ 삭제</button>
-            </div>
-            <div class="banner-items" id="items-${id}"></div>
-            <div class="banner-footer">
-                <button class="btn-add-item" onclick="addItem(${id})">➕ 항목 추가</button>
-            </div>
-        `;
-        container.appendChild(card);
-
-        // eventData에 배너 추가
-        eventData.push({ id, title, items: [] });
-
-        // 항목 복원 또는 기본 항목 1개 생성
-        if (bannerData && bannerData.items && bannerData.items.length > 0) {
-            bannerData.items.forEach(item => addItem(id, item));
-        } else {
-            addItem(id);
-        }
+const CONFIG = {
+    w: 1000, h: 1000,
+    fonts: {
+        main:   "'Pretendard','Noto Sans JP','Noto Sans SC','Noto Sans Thai',sans-serif",
+        bold:   "'GmarketSansBold','Noto Sans JP','Noto Sans SC','Noto Sans Thai',sans-serif",
+        medium: "'GmarketSansMedium','Noto Sans JP','Noto Sans SC','Noto Sans Thai',sans-serif"
     }
+};
 
-    function deleteBanner(id) {
-        const allCards = document.querySelectorAll('.banner-card');
-        if (allCards.length <= 1) {
-            alert('최소 1개의 배너는 유지해야 합니다.');
-            return;
-        }
-        const card = document.querySelector(`.banner-card[data-banner-id="${id}"]`);
-        if (card) card.remove();
-        eventData = eventData.filter(b => b.id !== id);
+/* ─────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────── */
+function esc(s){ if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function autoH(ta){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
+
+function getBanner(bid){ return eventData.find(b=>b.id===bid); }
+function getGroup(bid,gid){ const b=getBanner(bid); return b?b.groups.find(g=>g.gid===gid):null; }
+function getOpt(bid,gid,oid){ const g=getGroup(bid,gid); return g?g.options.find(o=>o.oid===oid):null; }
+
+/* ─────────────────────────────────────────────
+   BANNER
+───────────────────────────────────────────── */
+function addBanner(data=null){
+    _bid++;
+    const bid=_bid;
+    const title = data ? data.title : `배너 ${bid}`;
+    const el=document.createElement('div');
+    el.className='banner-card'; el.dataset.bid=bid;
+    el.innerHTML=`
+      <div class="banner-hd">
+        <div class="banner-badge">${bid}</div>
+        <input type="text" placeholder="배너 제목 (예: 필러 이벤트)" value="${esc(title)}" oninput="getBanner(${bid}).title=this.value">
+        <button class="btn-del-banner" onclick="delBanner(${bid})">❌ 삭제</button>
+      </div>
+      <div class="banner-body" id="groups-${bid}"></div>
+      <div class="banner-ft">
+        <button class="btn-add-group" onclick="addGroup(${bid})">➕ 항목 그룹 추가</button>
+      </div>`;
+    document.getElementById('bannersContainer').appendChild(el);
+    eventData.push({id:bid, title, groups:[]});
+
+    if(data && data.groups && data.groups.length>0){
+        data.groups.forEach(g=>addGroup(bid,g));
+    } else {
+        addGroup(bid);
     }
+}
+function delBanner(bid){
+    if(document.querySelectorAll('.banner-card').length<=1){alert('최소 1개의 배너는 유지해야 합니다.');return;}
+    document.querySelector(`.banner-card[data-bid="${bid}"]`).remove();
+    eventData=eventData.filter(b=>b.id!==bid);
+}
 
-    function syncBannerTitle(id, value) {
-        const banner = eventData.find(b => b.id === id);
-        if (banner) banner.title = value;
+/* ─────────────────────────────────────────────
+   ITEM GROUP
+───────────────────────────────────────────── */
+function addGroup(bid, data=null){
+    _gid++;
+    const gid=_gid;
+    const name = data ? data.name : '';
+    const el=document.createElement('div');
+    el.className='group-card'; el.dataset.bid=bid; el.dataset.gid=gid;
+    el.innerHTML=`
+      <div class="group-hd">
+        <div class="group-dot"></div>
+        <textarea rows="1" placeholder="항목명 (예: 필러, 줄바꿈 가능)"
+          oninput="autoH(this);(getGroup(${bid},${gid})||{}).name=this.value">${esc(name)}</textarea>
+        <button class="btn-del-group" onclick="delGroup(${bid},${gid})" title="그룹 삭제">✕</button>
+      </div>
+      <div class="options-list" id="opts-${bid}-${gid}"></div>
+      <div class="group-ft">
+        <button class="btn-add-opt" onclick="addOpt(${bid},${gid})">＋ 옵션 추가</button>
+      </div>`;
+    document.getElementById(`groups-${bid}`).appendChild(el);
+
+    const banner=getBanner(bid);
+    if(banner) banner.groups.push({gid, name, options:[]});
+
+    const ta=el.querySelector('textarea');
+    if(ta) setTimeout(()=>autoH(ta),0);
+
+    if(data && data.options && data.options.length>0){
+        data.options.forEach(o=>addOpt(bid,gid,o));
+    } else {
+        addOpt(bid,gid);
     }
+}
+function delGroup(bid,gid){
+    const banner=getBanner(bid);
+    if(banner && banner.groups.length<=1){alert('최소 1개의 항목 그룹은 유지해야 합니다.');return;}
+    document.querySelector(`.group-card[data-bid="${bid}"][data-gid="${gid}"]`).remove();
+    if(banner) banner.groups=banner.groups.filter(g=>g.gid!==gid);
+}
 
-    let itemCount = 0;
-    function addItem(bannerId, itemData = null) {
-        itemCount++;
-        const iid = itemCount;
-        const container = document.getElementById(`items-${bannerId}`);
-        if (!container) return;
+/* ─────────────────────────────────────────────
+   OPTION ROW
+───────────────────────────────────────────── */
+function addOpt(bid,gid,data=null){
+    _oid++;
+    const oid=_oid;
+    const capsule   = data ? (data.capsule||'')     : '';
+    const mode      = data ? (data.priceMode||'auto'): 'auto';
+    const priceNum  = data ? (data.priceNum||'')     : '';
+    const priceSuf  = data ? (data.priceSuffix||'')  : '';
+    const priceDirect=data ? (data.priceDirect||'')  : '';
 
-        const name      = itemData ? itemData.name       : '';
-        const capsule   = itemData ? itemData.capsule     : '';
-        const priceNum  = itemData ? itemData.priceNum    : '';
-        const priceSuf  = itemData ? itemData.priceSuffix : '';
+    const group=getGroup(bid,gid);
+    if(group) group.options.push({oid,capsule,priceMode:mode,priceNum,priceSuffix:priceSuf,priceDirect});
 
-        const row = document.createElement('div');
-        row.className = 'item-row';
-        row.dataset.itemId = iid;
-        row.dataset.bannerId = bannerId;
+    const el=document.createElement('div');
+    el.className=`opt-row mode-${mode}`; el.dataset.oid=oid;
 
-        row.innerHTML = `
-            <div class="item-field">
-                <span class="field-tag">항목명</span>
-                <textarea rows="1" placeholder="예: 필러&#10;(줄바꿈 가능)" oninput="autoResize(this); syncItem(${bannerId},${iid},'name',this.value)">${escHtml(name)}</textarea>
-            </div>
-            <div class="item-field">
-                <span class="field-tag">단위 캡슐</span>
-                <input type="text" class="capsule-input" placeholder="예: 1cc" value="${escHtml(capsule)}" oninput="syncItem(${bannerId},${iid},'capsule',this.value)">
-            </div>
-            <div class="item-field">
-                <span class="field-tag">강조 숫자</span>
-                <input type="text" class="price-num-input" placeholder="예: 9" value="${escHtml(priceNum)}" oninput="syncItem(${bannerId},${iid},'priceNum',this.value)">
-            </div>
-            <div class="item-field">
-                <span class="field-tag">단위 텍스트</span>
-                <input type="text" placeholder="예: 만9천원" value="${escHtml(priceSuf)}" oninput="syncItem(${bannerId},${iid},'priceSuffix',this.value)">
-            </div>
-            <button class="btn-del-item" onclick="deleteItem(${bannerId},${iid})" title="삭제">✕</button>
-        `;
-        container.appendChild(row);
+    el.innerHTML = buildOptHTML(bid,gid,oid,capsule,mode,priceNum,priceSuf,priceDirect);
+    document.getElementById(`opts-${bid}-${gid}`).appendChild(el);
+}
 
-        // eventData에 항목 추가
-        const banner = eventData.find(b => b.id === bannerId);
-        if (banner) {
-            banner.items.push({ iid, name, capsule, priceNum, priceSuffix: priceSuf });
-        }
+function buildOptHTML(bid,gid,oid,capsule,mode,priceNum,priceSuf,priceDirect){
+    const autoVis   = mode==='auto'   ? '' : 'display:none;';
+    const directVis = mode==='direct' ? '' : 'display:none;';
+    return `
+      <div class="opt-field">
+        <span class="opt-tag">단위 캡슐</span>
+        <input type="text" class="capsule-inp" placeholder="예: 1cc" value="${esc(capsule)}"
+          oninput="syncOpt(${bid},${gid},${oid},'capsule',this.value)">
+      </div>
+      <div class="opt-field">
+        <span class="opt-tag">가격 방식</span>
+        <div class="mode-toggle">
+          <button class="${mode==='auto'?'active':''}"   onclick="setMode(${bid},${gid},${oid},'auto',this)">자동</button>
+          <button class="${mode==='direct'?'active':''}" onclick="setMode(${bid},${gid},${oid},'direct',this)">직접</button>
+        </div>
+      </div>
+      <div class="opt-field auto-fields" style="${autoVis}">
+        <span class="opt-tag">강조 숫자</span>
+        <input type="text" class="price-num-inp" placeholder="예: 70" value="${esc(priceNum)}"
+          oninput="syncOpt(${bid},${gid},${oid},'priceNum',this.value)">
+      </div>
+      <div class="opt-field auto-fields" style="${autoVis}">
+        <span class="opt-tag">단위 텍스트</span>
+        <input type="text" placeholder="예: 만원" value="${esc(priceSuf)}"
+          oninput="syncOpt(${bid},${gid},${oid},'priceSuffix',this.value)">
+      </div>
+      <div class="opt-field direct-fields" style="${directVis}grid-column:span 1;">
+        <span class="opt-tag">가격 전체 텍스트</span>
+        <input type="text" placeholder="예: 99만9천원" value="${esc(priceDirect)}"
+          oninput="syncOpt(${bid},${gid},${oid},'priceDirect',this.value)">
+      </div>
+      <button class="btn-del-opt" onclick="delOpt(${bid},${gid},${oid})" title="삭제">✕</button>`;
+}
 
-        // textarea 초기 높이 조정
-        const ta = row.querySelector('textarea');
-        if (ta) autoResize(ta);
-    }
+function setMode(bid,gid,oid,mode,btn){
+    const opt = getOpt(bid,gid,oid);
+    if(!opt) return;
+    opt.priceMode = mode;
 
-    function deleteItem(bannerId, iid) {
-        const banner = eventData.find(b => b.id === bannerId);
-        if (banner && banner.items.length <= 1) {
-            alert('최소 1개의 항목은 유지해야 합니다.');
-            return;
-        }
-        const row = document.querySelector(`.item-row[data-item-id="${iid}"]`);
-        if (row) row.remove();
-        if (banner) banner.items = banner.items.filter(it => it.iid !== iid);
-    }
+    const row = btn.closest('.opt-row');
+    row.className = `opt-row mode-${mode}`;
+    // 토글 버튼
+    row.querySelectorAll('.mode-toggle button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    // 필드 숨김/표시
+    row.querySelectorAll('.auto-fields').forEach(el=>  el.style.display = mode==='auto'   ? '' : 'none');
+    row.querySelectorAll('.direct-fields').forEach(el=> el.style.display = mode==='direct' ? '' : 'none');
+}
 
-    function syncItem(bannerId, iid, field, value) {
-        const banner = eventData.find(b => b.id === bannerId);
-        if (!banner) return;
-        const item = banner.items.find(it => it.iid === iid);
-        if (item) item[field] = value;
-    }
+function syncOpt(bid,gid,oid,field,value){
+    const opt=getOpt(bid,gid,oid);
+    if(opt) opt[field]=value;
+}
 
-    function autoResize(ta) {
-        ta.style.height = 'auto';
-        ta.style.height = ta.scrollHeight + 'px';
-    }
+function delOpt(bid,gid,oid){
+    const group=getGroup(bid,gid);
+    if(group && group.options.length<=1){alert('최소 1개의 옵션은 유지해야 합니다.');return;}
+    document.querySelector(`.opt-row[data-oid="${oid}"]`).remove();
+    if(group) group.options=group.options.filter(o=>o.oid!==oid);
+}
 
-    function escHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+/* ─────────────────────────────────────────────
+   배경 이미지 캐싱
+───────────────────────────────────────────── */
+document.getElementById('bgInput').addEventListener('change',function(e){
+    const fl=document.getElementById('fileLabel'), lt=document.getElementById('fileLabelText');
+    if(e.target.files&&e.target.files.length>0){
+        lt.textContent=e.target.files[0].name; fl.classList.add('attached');
+        const r=new FileReader();
+        r.onload=ev=>{const img=new Image();img.src=ev.target.result;img.onload=()=>cachedBgImg=img;};
+        r.readAsDataURL(e.target.files[0]);
+    }else{lt.textContent='배경 이미지 파일을 선택하세요';fl.classList.remove('attached');cachedBgImg=null;}
+});
 
-    /* ========================================
-       배경 이미지 캐싱
-    ======================================== */
-    document.getElementById('bgInput').addEventListener('change', function(e) {
-        const fileLabel = document.getElementById('fileLabel');
-        const labelText = document.getElementById('fileLabelText');
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            labelText.textContent = file.name;
-            fileLabel.classList.add('attached');
-            const reader = new FileReader();
-            reader.onload = ev => {
-                const img = new Image();
-                img.src = ev.target.result;
-                img.onload = () => { cachedBgImg = img; };
-            };
-            reader.readAsDataURL(file);
-        } else {
-            labelText.textContent = '배경 이미지 파일을 선택하세요';
-            fileLabel.classList.remove('attached');
-            cachedBgImg = null;
-        }
-    });
-
-    /* ========================================
-       JSON 백업 / 불러오기
-    ======================================== */
-    function saveProject() {
-        const data = {
-            version: 2,
-            topTitle: document.getElementById('topTitle').value,
-            topDate:  document.getElementById('topDate').value,
-            botText:  document.getElementById('botText').value,
-            banners: eventData.map(b => ({
-                title: b.title,
-                items: b.items.map(it => ({
-                    name:         it.name,
-                    capsule:      it.capsule,
-                    priceNum:     it.priceNum,
-                    priceSuffix:  it.priceSuffix
+/* ─────────────────────────────────────────────
+   JSON 백업 / 불러오기
+───────────────────────────────────────────── */
+function saveProject(){
+    const data={
+        version:3,
+        topTitle:document.getElementById('topTitle').value,
+        topDate: document.getElementById('topDate').value,
+        botText: document.getElementById('botText').value,
+        banners: eventData.map(b=>({
+            title:b.title,
+            groups:b.groups.map(g=>({
+                name:g.name,
+                options:g.options.map(o=>({
+                    capsule:o.capsule, priceMode:o.priceMode,
+                    priceNum:o.priceNum, priceSuffix:o.priceSuffix, priceDirect:o.priceDirect
                 }))
             }))
-        };
-        const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
-        const a = document.createElement('a');
-        a.setAttribute('href', str);
-        a.setAttribute('download', `이벤트_백업_${Date.now()}.json`);
-        document.body.appendChild(a); a.click(); a.remove();
+        }))
+    };
+    const str="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(data,null,2));
+    const a=document.createElement('a');
+    a.setAttribute('href',str); a.setAttribute('download',`이벤트_백업_${Date.now()}.json`);
+    document.body.appendChild(a); a.click(); a.remove();
+}
+
+function loadProject(event){
+    const file=event.target.files[0]; if(!file)return;
+    const r=new FileReader();
+    r.onload=e=>{
+        try{
+            const data=JSON.parse(e.target.result);
+            if(data.version!==3){alert('이 파일은 구버전 백업 파일입니다.\n새 버전과 호환되지 않습니다.');return;}
+            document.getElementById('topTitle').value=data.topTitle||'';
+            document.getElementById('topDate').value =data.topDate||'';
+            document.getElementById('botText').value =data.botText||'';
+            document.getElementById('bannersContainer').innerHTML='';
+            eventData=[]; _bid=0; _gid=0; _oid=0;
+            (data.banners&&data.banners.length>0 ? data.banners : [null]).forEach(b=>addBanner(b));
+            alert('내용을 성공적으로 불러왔습니다!');
+        }catch(err){console.error(err);alert('잘못된 백업 파일입니다.');}
+    };
+    r.readAsText(file); event.target.value='';
+}
+
+/* ─────────────────────────────────────────────
+   이미지 생성 트리거
+───────────────────────────────────────────── */
+async function generateImages(){
+    if(!cachedBgImg){alert('배경 이미지를 먼저 선택해주세요!');return;}
+    const validBanners=eventData.filter(b=>b.groups.some(g=>g.options.length>0));
+    if(validBanners.length===0){alert('최소 1개의 배너와 항목을 입력해주세요.');return;}
+    await document.fonts.ready;
+
+    const pc=document.getElementById('previewContainer');
+    pc.innerHTML=''; generatedImagesUrls=[];
+
+    const topTitle=document.getElementById('topTitle').value;
+    const topDate =document.getElementById('topDate').value;
+    const botText =document.getElementById('botText').value;
+
+    validBanners.forEach(banner=>{
+        const url=drawCanvas(cachedBgImg,banner,topTitle,topDate,botText);
+        generatedImagesUrls.push(url);
+        const img=document.createElement('img'); img.src=url; pc.appendChild(img);
+    });
+    document.getElementById('downloadBtn').style.display='block';
+}
+
+/* ─────────────────────────────────────────────
+   다운로드
+───────────────────────────────────────────── */
+function downloadAllImages(){
+    if(!generatedImagesUrls.length)return;
+    if(generatedImagesUrls.length===1){
+        const a=document.createElement('a'); a.download=`event_${Date.now()}.jpg`; a.href=generatedImagesUrls[0]; a.click();
+    }else{
+        const zip=new JSZip();
+        generatedImagesUrls.forEach((u,i)=>zip.file(`event_${i+1}.jpg`,u.replace(/^data:image\/(png|jpeg);base64,/,''),{base64:true}));
+        zip.generateAsync({type:'blob'}).then(blob=>saveAs(blob,`이벤트패키지_${Date.now()}.zip`));
     }
+}
 
-    function loadProject(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-            try {
-                const data = JSON.parse(e.target.result);
-                if (data.version !== 2) {
-                    alert('이 파일은 구버전 백업 파일입니다. 새 버전으로 다시 저장해 주세요.');
-                    return;
-                }
-                // 기본 정보 복원
-                document.getElementById('topTitle').value = data.topTitle || '';
-                document.getElementById('topDate').value  = data.topDate  || '';
-                document.getElementById('botText').value  = data.botText  || '';
-
-                // 배너 초기화 후 복원
-                document.getElementById('bannersContainer').innerHTML = '';
-                eventData = [];
-                bannerCount = 0; itemCount = 0;
-
-                if (data.banners && data.banners.length > 0) {
-                    data.banners.forEach(b => addBanner(b));
-                } else {
-                    addBanner();
-                }
-                alert('내용을 성공적으로 불러왔습니다!');
-            } catch {
-                alert('잘못된 백업 파일입니다.');
-            }
-        };
-        reader.readAsText(file);
-        event.target.value = '';
-    }
-
-    /* ========================================
-       이미지 생성
-    ======================================== */
-    async function generateImages() {
-        if (!cachedBgImg) {
-            alert('배경 이미지를 먼저 선택해주세요!');
-            return;
+/* ─────────────────────────────────────────────
+   Canvas 유틸
+───────────────────────────────────────────── */
+function wrapChar(ctx,text,maxW){
+    const res=[];
+    String(text||'').split('\n').forEach(para=>{
+        let cur='';
+        for(let i=0;i<para.length;i++){
+            const t=cur+para[i];
+            if(ctx.measureText(t).width>maxW&&i>0){res.push(cur);cur=para[i];}else cur=t;
         }
-        const banners = eventData.filter(b => b.items.length > 0);
-        if (banners.length === 0) {
-            alert('최소 1개의 배너와 항목을 입력해주세요.');
-            return;
-        }
+        res.push(cur);
+    });
+    return res;
+}
 
-        await document.fonts.ready;
+function rRect(ctx,x,y,w,h,r){
+    ctx.beginPath();ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();ctx.fill();
+}
 
-        const previewContainer = document.getElementById('previewContainer');
-        previewContainer.innerHTML = '';
-        generatedImagesUrls = [];
+/* ─────────────────────────────────────────────
+   Canvas 렌더링 — 핵심 함수
+   그룹 사이에만 구분선, 그룹 내 옵션은 묶여서 렌더
+───────────────────────────────────────────── */
+function drawCanvas(bgImg, banner, topTitle, topDate, botText){
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d');
+    canvas.width=CONFIG.w; canvas.height=CONFIG.h;
 
-        const topTitle = document.getElementById('topTitle').value;
-        const topDate  = document.getElementById('topDate').value;
-        const botText  = document.getElementById('botText').value;
+    const SX=105, EX=895;                 // 콘텐츠 좌우 경계
+    const OPT_GAP    = 46;   // 그룹 내 옵션 행 간격
+    const GRP_SEP    = 62;   // 그룹 사이 여백 (구분선 포함)
+    const TXT_LINE_H = 38;   // 항목명 줄 간격
+    const CAP_GAP    = 22;   // 캡슐~가격 간격
+    const PAD_V      = 16;   // 흰 박스 상하 padding
+    const ITEM_HALF  = 22;   // 첫/마지막 행 여백
 
-        banners.forEach(banner => {
-            const dataUrl = drawSingleCanvas(cachedBgImg, banner, topTitle, topDate, botText);
-            generatedImagesUrls.push(dataUrl);
-            const img = document.createElement('img');
-            img.src = dataUrl;
-            previewContainer.appendChild(img);
+    /* 폰트 단축 */
+    const fMain = CONFIG.fonts.main;
+    const fBold = CONFIG.fonts.bold;
+    const fMed  = CONFIG.fonts.medium;
+
+    /* ── 1단계: 각 그룹·옵션 사전 계산 ── */
+    const groups = banner.groups.filter(g=>g.options.length>0);
+
+    ctx.letterSpacing='0px';
+
+    groups.forEach(grp=>{
+        /* 그룹 내 가격 최대 너비 */
+        grp._maxPriceW = 0;
+        grp.options.forEach(opt=>{
+            let pw=0;
+            if(opt.priceMode==='auto'){
+                ctx.font=`800 54px ${fMain}`; ctx.letterSpacing='-3px';
+                const nw=ctx.measureText(opt.priceNum||'').width;
+                ctx.font=`700 32px ${fMain}`; ctx.letterSpacing='-1px';
+                const sw=ctx.measureText(opt.priceSuffix||'').width;
+                pw=nw+sw+(sw>0?3:0);
+            }else{
+                ctx.font=`700 38px ${fMain}`; ctx.letterSpacing='-1px';
+                pw=ctx.measureText(opt.priceDirect||'').width;
+            }
+            opt._priceW=pw;
+            if(pw>grp._maxPriceW) grp._maxPriceW=pw;
         });
 
-        document.getElementById('downloadBtn').style.display = 'block';
-    }
+        /* 그룹 내 캡슐 최대 너비 */
+        grp._maxCapW=0;
+        ctx.font=`800 27px ${fMain}`; ctx.letterSpacing='0px';
+        grp.options.forEach(opt=>{
+            if(opt.capsule){const w=ctx.measureText(opt.capsule).width+30; if(w>grp._maxCapW) grp._maxCapW=w;}
+        });
 
-    /* ========================================
-       다운로드
-    ======================================== */
-    function downloadAllImages() {
-        if (generatedImagesUrls.length === 0) return;
-        if (generatedImagesUrls.length === 1) {
-            const a = document.createElement('a');
-            a.download = `event_${Date.now()}.jpg`;
-            a.href = generatedImagesUrls[0];
-            a.click();
-        } else {
-            const zip = new JSZip();
-            generatedImagesUrls.forEach((url, i) => {
-                const base64 = url.replace(/^data:image\/(png|jpeg);base64,/, '');
-                zip.file(`event_${i + 1}.jpg`, base64, { base64: true });
-            });
-            zip.generateAsync({ type: 'blob' }).then(blob => {
-                saveAs(blob, `이벤트패키지_${Date.now()}.zip`);
-            });
-        }
-    }
+        /* 항목명 줄바꿈 너비 계산 */
+        const priceRight = EX - grp._maxPriceW;
+        const capRight   = grp._maxCapW>0 ? (priceRight - CAP_GAP - grp._maxCapW) : priceRight;
+        const maxTxtW    = capRight - SX - 10;
+        ctx.font=`700 27px ${fMain}`; ctx.letterSpacing='-1px';
+        grp._lines = wrapChar(ctx, grp.name||'', maxTxtW);
 
-    /* ========================================
-       Canvas 렌더링
-    ======================================== */
+        /* 그룹 전체 높이 */
+        const nameH  = (grp._lines.length-1)*TXT_LINE_H;
+        const optsH  = (grp.options.length-1)*OPT_GAP;
+        grp._spanH   = Math.max(nameH, optsH);
+    });
 
-    // 글자 단위 줄바꿈 (wrapTextChar)
-    function wrapTextChar(ctx, text, maxWidth) {
-        const result = [];
-        const paragraphs = String(text).split('\n');
-        paragraphs.forEach(para => {
-            let current = '';
-            for (let i = 0; i < para.length; i++) {
-                const ch = para[i];
-                const test = current + ch;
-                if (ctx.measureText(test).width > maxWidth && i > 0) {
-                    result.push(current);
-                    current = ch;
-                } else {
-                    current = test;
+    /* ── 2단계: 총 리스트 높이 ── */
+    let totalH=0;
+    groups.forEach((g,i)=>{
+        totalH+=g._spanH;
+        if(i<groups.length-1) totalH+=GRP_SEP;
+    });
+
+    /* ── 3단계: 배너 제목 박스 높이 ── */
+    ctx.font=`49px ${fBold}`; ctx.letterSpacing='-2px';
+    const titleLines = wrapChar(ctx, banner.title||'', 800);
+    const TITLE_LH   = 58;
+    const bannerH    = Math.max(95, titleLines.length*TITLE_LH+30);
+    const whiteH     = PAD_V+ITEM_HALF+totalH+ITEM_HALF+PAD_V;
+    const boxH       = bannerH+whiteH;
+    const boxY       = 500-boxH/2;
+
+    /* ── 4단계: 배경 ── */
+    const ir=bgImg.width/bgImg.height;
+    ctx.drawImage(bgImg,0,(1000-1000/ir)/2,1000,1000/ir);
+
+    /* ── 5단계: 상단 제목/기간 ── */
+    ctx.textBaseline='alphabetic'; ctx.textAlign='center'; ctx.fillStyle='#ff6985';
+    ctx.font=`27px ${fMed}`; ctx.letterSpacing='-1px';
+    if(topTitle) ctx.fillText(topTitle,500,80);
+    if(topDate)  ctx.fillText(topDate, 500,115);
+
+    /* ── 6단계: 배너(핑크) 박스 ── */
+    ctx.fillStyle='#ff6985'; ctx.fillRect(60,boxY,880,bannerH);
+    ctx.fillStyle='white'; ctx.font=`49px ${fBold}`; ctx.letterSpacing='-2px';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const tsy=boxY+bannerH/2-((titleLines.length-1)*TITLE_LH)/2;
+    titleLines.forEach((l,i)=>ctx.fillText(l,500,tsy+i*TITLE_LH));
+
+    /* ── 7단계: 흰색 박스 ── */
+    const whiteY=boxY+bannerH;
+    ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.fillRect(60,whiteY,880,whiteH);
+    ctx.strokeStyle='#ff6985'; ctx.lineWidth=2;
+    ctx.strokeRect(61,whiteY,878,whiteH-1);
+
+    /* ── 8단계: 항목 그룹 렌더링 ── */
+    ctx.textBaseline='middle';
+    let curY=whiteY+PAD_V+ITEM_HALF;
+
+    groups.forEach((grp,gi)=>{
+        const grpCenterY = curY + grp._spanH/2;
+
+        /* 항목명 — 그룹 중앙에 1회 */
+        ctx.textAlign='left'; ctx.fillStyle='black';
+        ctx.font=`700 27px ${fMain}`; ctx.letterSpacing='-1px';
+        const txtStartY = grpCenterY - ((grp._lines.length-1)*TXT_LINE_H)/2;
+        grp._lines.forEach((line,li)=>ctx.fillText(line, SX, txtStartY+li*TXT_LINE_H));
+
+        /* 옵션 행들 */
+        const optStartY = grpCenterY - ((grp.options.length-1)*OPT_GAP)/2;
+        grp.options.forEach((opt,oi)=>{
+            const oy = optStartY + oi*OPT_GAP;
+
+            /* 가격 우측 기준 */
+            const priceRX = EX;
+
+            /* 캡슐 */
+            if(opt.capsule){
+                const capRX = priceRX - grp._maxPriceW - (grp._maxPriceW>0?CAP_GAP:0);
+                const capLX = capRX - grp._maxCapW;
+                ctx.fillStyle='#ff6985';
+                rRect(ctx,capLX,oy-22,grp._maxCapW,44,12);
+                ctx.font=`800 27px ${fMain}`; ctx.letterSpacing='0px';
+                ctx.textAlign='center'; ctx.fillStyle='white';
+                ctx.fillText(opt.capsule, capLX+grp._maxCapW/2, oy+2);
+            }
+
+            /* 가격 렌더링 */
+            ctx.textBaseline='alphabetic';
+            const baseY = oy+17;
+
+            if(opt.priceMode==='auto'){
+                /* 단위 텍스트 (우측 끝부터) */
+                if(opt.priceSuffix){
+                    ctx.font=`700 32px ${fMain}`; ctx.letterSpacing='-1px';
+                    ctx.textAlign='right'; ctx.fillStyle='black';
+                    ctx.fillText(opt.priceSuffix, priceRX, baseY);
+                }
+                /* 강조 숫자 */
+                if(opt.priceNum){
+                    ctx.font=`800 54px ${fMain}`; ctx.letterSpacing='-3px';
+                    ctx.textAlign='right'; ctx.fillStyle='#ff6985';
+                    // priceSuffix 너비 만큼 안쪽으로
+                    ctx.font=`700 32px ${fMain}`; ctx.letterSpacing='-1px';
+                    const sw=ctx.measureText(opt.priceSuffix||'').width;
+                    ctx.font=`800 54px ${fMain}`; ctx.letterSpacing='-3px';
+                    ctx.fillText(opt.priceNum, priceRX-sw-(sw>0?3:0), baseY);
+                }
+            } else {
+                /* 직접 입력: 단일 스타일로 렌더 */
+                if(opt.priceDirect){
+                    ctx.font=`700 38px ${fMain}`; ctx.letterSpacing='-1px';
+                    ctx.textAlign='right'; ctx.fillStyle='#ff6985';
+                    ctx.fillText(opt.priceDirect, priceRX, baseY);
                 }
             }
-            result.push(current);
-        });
-        return result;
-    }
-
-    // 둥근 사각형
-    function roundRect(ctx, x, y, w, h, r) {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
-        ctx.closePath(); ctx.fill();
-    }
-
-    /**
-     * 단일 배너 → Canvas 렌더링
-     * @param {HTMLImageElement} bgImg - 배경 이미지
-     * @param {Object}           banner - { title, items: [{name, capsule, priceNum, priceSuffix}] }
-     * @param {string}           topTitle
-     * @param {string}           topDate
-     * @param {string}           botText
-     */
-    function drawSingleCanvas(bgImg, banner, topTitle, topDate, botText) {
-        const canvas = document.createElement('canvas');
-        const ctx    = canvas.getContext('2d');
-        canvas.width  = CONFIG.width;
-        canvas.height = CONFIG.height;
-
-        const startX = 105, endX = 895;
-        const unitPriceGap  = 25;  // 단위 캡슐~금액 간격
-        const groupRowGap   = 50;  // 같은 그룹 내 행 간격
-        const textLineGap   = 40;  // 항목명 줄 간격
-        const whitePad      = 15;
-        const itemHalf      = 24;
-        const groupSep      = 65;  // 그룹 사이 여백
-
-        /* ---- 1. 항목 전처리 (각 행의 레이아웃 관련 수치 계산) ---- */
-        // items → groups (여기서는 각 item이 1개의 그룹)
-        const groups = banner.items.map(it => ({ ...it }));
-
-        // 가격 너비, 단위 캡슐 너비, 줄바꿈 계산
-        ctx.letterSpacing = '0px';
-
-        groups.forEach(g => {
-            // --- 강조 숫자 너비
-            ctx.font = `800 54px ${CONFIG.fonts.main}`;
-            ctx.letterSpacing = '-3px';
-            g._numW = ctx.measureText(g.priceNum || '').width;
-
-            // --- 단위 텍스트 너비
-            ctx.font = `700 32px ${CONFIG.fonts.main}`;
-            ctx.letterSpacing = '-1px';
-            g._sufW = ctx.measureText(g.priceSuffix || '').width;
-
-            // 가격 전체 너비 = 강조숫자 + 단위텍스트 + 3px 간격
-            g._totalPriceW = g._numW + g._sufW + (g._sufW > 0 ? 3 : 0);
-
-            // --- 단위 캡슐 너비
-            ctx.font = `800 27px ${CONFIG.fonts.main}`;
-            ctx.letterSpacing = '0px';
-            g._capsuleW = g.capsule ? ctx.measureText(g.capsule).width + 30 : 0;
-
-            // --- 줄바꿈 기준 너비 계산
-            const priceRightBound = endX - g._totalPriceW; // 가격 왼쪽 끝
-            const capsuleRightBound = (g._capsuleW > 0)
-                ? priceRightBound - unitPriceGap - g._capsuleW
-                : priceRightBound;
-            const maxTextW = capsuleRightBound - startX - 10;
-
-            ctx.font = `700 27px ${CONFIG.fonts.main}`;
-            ctx.letterSpacing = '-1px';
-            g._lines = wrapTextChar(ctx, g.name || '', maxTextW);
-
-            // 이 그룹의 총 높이 스팬 (행 1개이므로 줄 수 기준)
-            g._heightSpan = Math.max(0, (g._lines.length - 1) * textLineGap);
+            ctx.textBaseline='middle';
         });
 
-        /* ---- 2. 총 리스트 높이 계산 ---- */
-        let totalListHeight = 0;
-        groups.forEach((g, i) => {
-            totalListHeight += g._heightSpan;
-            if (i < groups.length - 1) totalListHeight += groupSep;
-        });
-
-        /* ---- 3. 배너 제목 줄바꿈 및 높이 계산 ---- */
-        ctx.font = `49px ${CONFIG.fonts.display}`;
-        ctx.letterSpacing = '-2px';
-        const titleLines    = wrapTextChar(ctx, banner.title || '', 800);
-        const titleLineH    = 58;
-        const bannerH       = Math.max(95, titleLines.length * titleLineH + 30);
-        const whiteBoxH     = whitePad + itemHalf + totalListHeight + itemHalf + whitePad;
-        const totalBoxH     = bannerH + whiteBoxH;
-        const boxStartY     = 500 - totalBoxH / 2;
-
-        /* ---- 4. 배경 그리기 ---- */
-        const imgRatio = bgImg.width / bgImg.height;
-        ctx.drawImage(bgImg, 0, (1000 - 1000 / imgRatio) / 2, 1000, 1000 / imgRatio);
-
-        /* ---- 5. 상단 제목 / 기간 ---- */
-        ctx.textBaseline = 'alphabetic';
-        ctx.textAlign    = 'center';
-        ctx.fillStyle    = '#ff6985';
-        ctx.font = `27px ${CONFIG.fonts.displayMed}`;
-        ctx.letterSpacing = '-1px';
-        if (topTitle) ctx.fillText(topTitle, 500, 80);
-        if (topDate)  ctx.fillText(topDate,  500, 115);
-
-        /* ---- 6. 배너 제목 박스 ---- */
-        ctx.fillStyle = '#ff6985';
-        ctx.fillRect(60, boxStartY, 880, bannerH);
-        ctx.fillStyle = 'white';
-        ctx.font = `49px ${CONFIG.fonts.display}`;
-        ctx.letterSpacing = '-2px';
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        const titleStartY = boxStartY + bannerH / 2 - ((titleLines.length - 1) * titleLineH) / 2;
-        titleLines.forEach((line, i) => ctx.fillText(line, 500, titleStartY + i * titleLineH));
-
-        /* ---- 7. 흰색 박스 ---- */
-        const whiteTop = boxStartY + bannerH;
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        ctx.fillRect(60, whiteTop, 880, whiteBoxH);
-        ctx.strokeStyle = '#ff6985'; ctx.lineWidth = 2;
-        ctx.strokeRect(61, whiteTop, 878, whiteBoxH - 1);
-
-        /* ---- 8. 항목 리스트 렌더링 ---- */
-        ctx.textBaseline = 'middle';
-        let curY = whiteTop + whitePad + itemHalf;
-
-        groups.forEach((g, index) => {
-            const centerY = curY + g._heightSpan / 2;
-
-            /* 항목명 (좌측, 줄바꿈 적용) */
-            ctx.textAlign = 'left';
-            ctx.fillStyle = 'black';
-            ctx.font = `700 27px ${CONFIG.fonts.main}`;
-            ctx.letterSpacing = '-1px';
-            const textStartY = centerY - ((g._lines.length - 1) * textLineGap) / 2;
-            g._lines.forEach((line, li) => ctx.fillText(line, startX, textStartY + li * textLineGap));
-
-            /* 가격 블록 우측 기준점 */
-            const priceRightX = endX;
-
-            /* 단위 캡슐 */
-            if (g.capsule) {
-                const capsuleRightX = priceRightX - g._totalPriceW - (g._totalPriceW > 0 ? unitPriceGap : 0);
-                const capsuleLeftX  = capsuleRightX - g._capsuleW;
-                ctx.fillStyle = '#ff6985';
-                roundRect(ctx, capsuleLeftX, centerY - 24, g._capsuleW, 48, 14);
-                ctx.textAlign = 'center'; ctx.fillStyle = 'white';
-                ctx.font = `800 27px ${CONFIG.fonts.main}`;
-                ctx.letterSpacing = '0px';
-                ctx.fillText(g.capsule, capsuleLeftX + g._capsuleW / 2, centerY + 2);
-            }
-
-            /* 가격 (강조 숫자 + 단위 텍스트) — 분리 렌더링 */
-            ctx.textBaseline = 'alphabetic';
-            const baseY = centerY + 18;
-
-            // 단위 텍스트 (우측 끝부터)
-            if (g.priceSuffix) {
-                ctx.font = `700 32px ${CONFIG.fonts.main}`;
-                ctx.letterSpacing = '-1px';
-                ctx.textAlign = 'right';
-                ctx.fillStyle = 'black';
-                ctx.fillText(g.priceSuffix, priceRightX, baseY);
-            }
-
-            // 강조 숫자 (단위 텍스트 왼쪽)
-            if (g.priceNum) {
-                ctx.font = `800 54px ${CONFIG.fonts.main}`;
-                ctx.letterSpacing = '-3px';
-                ctx.textAlign = 'right';
-                ctx.fillStyle = '#ff6985';
-                // 단위 텍스트가 있으면 그만큼 왼쪽으로 이동, 3px 간격
-                const numRightX = priceRightX - g._sufW - (g._sufW > 0 ? 3 : 0);
-                ctx.fillText(g.priceNum, numRightX, baseY);
-            }
-
-            ctx.textBaseline = 'middle';
-
-            /* 구분선 */
-            if (index < groups.length - 1) {
-                const lineY = curY + g._heightSpan + groupSep / 2;
-                ctx.beginPath();
-                ctx.moveTo(startX, lineY); ctx.lineTo(endX, lineY);
-                ctx.strokeStyle = '#ff6985'; ctx.lineWidth = 1; ctx.stroke();
-                curY = lineY + groupSep / 2;
-            }
-        });
-
-        /* ---- 9. 하단 문구 ---- */
-        ctx.textBaseline = 'alphabetic';
-        ctx.textAlign    = 'center';
-        ctx.fillStyle    = '#ff6985';
-        ctx.font = `23px ${CONFIG.fonts.displayMed}`;
-        ctx.letterSpacing = '0px';
-        if (botText) ctx.fillText(botText, 500, 975);
-
-        return canvas.toDataURL('image/jpeg', 0.95);
-    }
-
-    /* ========================================
-       초기화 — 기본 배너 1개 생성
-    ======================================== */
-    (function init() {
-        addBanner({
-            title: '필러 이벤트',
-            items: [
-                { name: '필러',       capsule: '1cc',  priceNum: '70',  priceSuffix: '만원' },
-                { name: '필러',       capsule: '3cc',  priceNum: '199', priceSuffix: '만원' },
-                { name: '보톡스',     capsule: '1부위', priceNum: '10',  priceSuffix: '만원' },
-                { name: 'v라인 보톡스', capsule: '',    priceNum: '29',  priceSuffix: '만원' }
-            ]
-        });
-    })();
-
-    /* ========================================
-       단축키  Ctrl+S
-    ======================================== */
-    window.addEventListener('keydown', e => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            e.preventDefault();
-            generateImages();
+        /* 그룹 사이 구분선 (마지막 그룹 제외) */
+        if(gi<groups.length-1){
+            const lineY=curY+grp._spanH+GRP_SEP/2;
+            ctx.beginPath(); ctx.moveTo(SX,lineY); ctx.lineTo(EX,lineY);
+            ctx.strokeStyle='#ff6985'; ctx.lineWidth=1; ctx.stroke();
+            curY=lineY+GRP_SEP/2;
         }
     });
+
+    /* ── 9단계: 하단 문구 ── */
+    ctx.textBaseline='alphabetic'; ctx.textAlign='center'; ctx.fillStyle='#ff6985';
+    ctx.font=`23px ${fMed}`; ctx.letterSpacing='0px';
+    if(botText) ctx.fillText(botText,500,975);
+
+    return canvas.toDataURL('image/jpeg',0.95);
+}
+
+/* ─────────────────────────────────────────────
+   초기화 — 샘플 데이터
+───────────────────────────────────────────── */
+(function init(){
+    addBanner({
+        title:'필러 이벤트',
+        groups:[
+            {
+                name:'필러',
+                options:[
+                    {capsule:'1cc', priceMode:'auto',   priceNum:'70',  priceSuffix:'만원',   priceDirect:''},
+                    {capsule:'3cc', priceMode:'direct',  priceNum:'',    priceSuffix:'',       priceDirect:'199만원'}
+                ]
+            },
+            {
+                name:'보톡스',
+                options:[
+                    {capsule:'1부위', priceMode:'auto', priceNum:'10',  priceSuffix:'만원',   priceDirect:''},
+                    {capsule:'',      priceMode:'auto', priceNum:'29',  priceSuffix:'만원',   priceDirect:''}
+                ]
+            }
+        ]
+    });
+})();
+
+/* Ctrl+S */
+window.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();generateImages();}
+});
 </script>
 </body>
 </html>
