@@ -117,7 +117,7 @@ let generatedImagesUrls = [];
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
                 </div>
                 <textarea class="btn-input item-name" placeholder="항목명 (예: 리쥬란2cc)">${itemName}</textarea>
-                <input type="text" class="btn-input btn-input-unit item-unit" placeholder="단위" value="${unit}">
+                <input type="text" class="btn-input btn-input-unit item-unit" placeholder="예: 1회, 100cc" value="${unit}">
                 <input type="text" class="btn-input btn-input-price item-price" placeholder="금액" value="${price}">
                 <div class="row-actions">
                     <button class="btn-copy" onclick="duplicateItemRow(this)" title="복제">
@@ -145,7 +145,7 @@ let generatedImagesUrls = [];
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
                 </div>
                 <textarea class="btn-input item-name" placeholder="항목명 (예: <리쥬란 2cc>)">${itemName}</textarea>
-                <input type="text" class="btn-input btn-input-unit item-unit" placeholder="단위" value="${unit}">
+                <input type="text" class="btn-input btn-input-unit item-unit" placeholder="예: 1회, 100cc" value="${unit}">
                 <input type="text" class="btn-input btn-input-price item-price" placeholder="금액" value="${price}">
                 <div class="row-actions">
                     <button class="btn-copy" onclick="duplicateItemRow(this)" title="복제">
@@ -258,6 +258,24 @@ let generatedImagesUrls = [];
 
     document.getElementById('dropZone').addEventListener('click', function () {
       document.getElementById('bgInput').click();
+    });
+
+    // [UX] #itemsContainer 이벤트 위임: active-row 강조 + 가격 자동 포맷
+    document.getElementById('itemsContainer').addEventListener('focusin', function(e) {
+      const row = e.target.closest('.item-row');
+      if (row) row.classList.add('active-row');
+    });
+    document.getElementById('itemsContainer').addEventListener('focusout', function(e) {
+      const row = e.target.closest('.item-row');
+      if (!row) return;
+      // 포커스가 같은 row 안에 머무는지 확인 (탭 이동 시 깜빡임 방지)
+      if (!row.contains(e.relatedTarget)) {
+        row.classList.remove('active-row');
+      }
+      // 가격 자동 포맷
+      if (e.target.classList.contains('item-price')) {
+        e.target.value = formatPriceKorean(e.target.value);
+      }
     });
 
     async function generateImages() {
@@ -387,6 +405,21 @@ let generatedImagesUrls = [];
         return Number(clean).toLocaleString('ko-KR');
       }
       return numStr;
+    }
+
+    function formatPriceKorean(val) {
+      const str = String(val).trim();
+      if (!str) return str;
+      // 이미 문자가 섞여 있거나 하이픈이 있으면 원본 유지
+      if (/[^0-9]/.test(str)) return str;
+      const num = parseInt(str, 10);
+      if (isNaN(num) || num === 0) return str;
+      const man = Math.floor(num / 10000);
+      const chun = Math.floor((num % 10000) / 1000);
+      let result = '';
+      if (man > 0) result += man + '만';
+      if (chun > 0) result += chun + '천';
+      return result || str;
     }
 
     function parseCSV(blockText) {

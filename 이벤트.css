@@ -247,7 +247,14 @@
 
     .item-row {
       grid-template-columns: 24px 1fr 80px 100px 50px;
-      gap: 12px;
+      gap: 14px;
+      padding: 14px 18px;
+    }
+
+    .item-row.active-row {
+      border-color: var(--primary);
+      background: #fffef0;
+      box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.18), var(--shadow-sm);
     }
 
     .section-title-wrapper {
@@ -270,6 +277,10 @@
       transform: scale(1.01) translateY(-2px);
       box-shadow: var(--shadow-md);
       border-color: var(--primary);
+    }
+
+    .item-row.active-row:hover {
+      transform: none;
     }
 
     .drag-handle {
@@ -425,6 +436,20 @@
     .btn-copy:hover {
       background: #e5e7eb;
       color: #000;
+    }
+
+    .row-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.3;
+      transition: opacity 0.2s ease;
+    }
+
+    .item-row:hover .row-actions,
+    .item-row.active-row .row-actions {
+      opacity: 1;
     }
 
     .preview-card {
