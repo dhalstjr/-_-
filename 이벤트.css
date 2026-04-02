@@ -279,9 +279,6 @@
       border-color: var(--primary);
     }
 
-    .item-row.active-row:hover {
-      transform: none;
-    }
 
     .drag-handle {
       cursor: grab;
@@ -440,11 +437,23 @@
 
     .row-actions {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
-      gap: 6px;
+      gap: 2px;
       opacity: 0.3;
       transition: opacity 0.2s ease;
+    }
+
+    .row-actions .btn-copy,
+    .row-actions .btn-remove {
+      width: 22px;
+      height: 22px;
+    }
+
+    .row-actions .btn-copy svg,
+    .row-actions .btn-remove svg {
+      width: 12px;
+      height: 12px;
     }
 
     .item-row:hover .row-actions,
