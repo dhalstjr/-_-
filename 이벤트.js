@@ -866,3 +866,46 @@ window.addEventListener('keydown', (e) => {
     generateImages();
   }
 });
+
+// [UX] Banner Tabs Mouse Drag Scrolling
+document.addEventListener('DOMContentLoaded', () => {
+  const tabs = document.getElementById('bannerTabs');
+  if (!tabs) return;
+
+  let isDown = false;
+  let startX;
+  let scrollLeft;
+
+  tabs.addEventListener('mousedown', (e) => {
+    isDown = true;
+    startX = e.pageX - tabs.offsetLeft;
+    scrollLeft = tabs.scrollLeft;
+    // .is-dragging class is NOT added immediately here to prevent blocking standard clicks
+  });
+
+  tabs.addEventListener('mouseleave', () => {
+    isDown = false;
+    tabs.classList.remove('is-dragging');
+  });
+
+  tabs.addEventListener('mouseup', () => {
+    isDown = false;
+    tabs.classList.remove('is-dragging');
+  });
+
+  tabs.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    const x = e.pageX - tabs.offsetLeft;
+    const walk = x - startX;
+    
+    // 마우스가 일정 거리(3px) 이상 이동했을 때만 드래그 상태로 인식
+    if (Math.abs(walk) > 3) {
+      tabs.classList.add('is-dragging');
+    }
+
+    if (tabs.classList.contains('is-dragging')) {
+      e.preventDefault(); // 기본 드래그 방지 (텍스트 선택 등)
+      tabs.scrollLeft = scrollLeft - walk;
+    }
+  });
+});

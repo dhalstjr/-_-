@@ -604,6 +604,16 @@ button {
   scrollbar-width: thin;
   margin-bottom: 4px;
   -webkit-overflow-scrolling: touch;
+  cursor: grab;
+}
+
+#bannerTabs.is-dragging {
+  cursor: grabbing;
+}
+
+#bannerTabs.is-dragging .banner-tab,
+#bannerTabs.is-dragging .btn-tab-add {
+  pointer-events: none;
 }
 
 #bannerTabs::-webkit-scrollbar {
