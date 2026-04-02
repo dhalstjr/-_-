@@ -1,904 +1,143 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>바로그 월이벤트 생성기</title>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <style>
-    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;800&family=Noto+Sans+SC:wght@500;700;800&family=Noto+Sans+Thai:wght@500;700;800&display=swap');
-    @font-face{font-family:'GmarketSansMedium';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff')format('woff');}
-    @font-face{font-family:'GmarketSansBold';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff')format('woff');}
 
-    :root{
-      --p:#ff6985; --pd:#e84d6c; --pl:rgba(255,105,133,.09);
-      --a:#ffcc00; --ad:#e6b800;
-      --teal:#00b8a9; --teal-l:rgba(0,184,169,.09);
-      --bg:#f2f4f8; --card:#fff; --txt:#1e2432; --muted:#8a92a6; --border:#e4e8f0;
-      --gbg:#f8f9fc; --r:14px; --rs:8px;
-      --sh:0 4px 24px rgba(0,0,0,.07); --shl:0 20px 50px rgba(0,0,0,.13);
-      --font:'Pretendard','Noto Sans JP','Noto Sans SC','Noto Sans Thai',sans-serif;
-    }
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:var(--font);background:var(--bg);color:var(--txt);line-height:1.6;padding:36px 20px;}
-
-    /* ── Layout ── */
-    .wrap{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:1fr 1.1fr;gap:32px;}
-    @media(max-width:1060px){.wrap{grid-template-columns:1fr;}}
-
-    /* ── Card ── */
-    .card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:28px;}
-
-    /* ── App Header ── */
-    .app-head{margin-bottom:24px;}
-    .app-head h1{font-size:21px;font-weight:800;border-left:4px solid var(--p);padding-left:13px;line-height:1.3;}
-    .app-head p{margin-top:5px;margin-left:17px;font-size:12px;color:var(--muted);}
-
-    /* ── Section label ── */
-    .slbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
-      margin-bottom:13px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-
-    /* ── Form ── */
-    .fg{margin-bottom:13px;}
-    .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    .flbl{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;}
-    .flbl .tip{font-weight:400;color:var(--p);margin-left:5px;}
-
-    input[type=text],textarea{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:var(--rs);
-      font-size:13px;font-family:inherit;color:var(--txt);background:#fafbfc;transition:border-color .18s,box-shadow .18s;}
-    input[type=text]:focus,textarea:focus{outline:none;border-color:var(--p);box-shadow:0 0 0 3px rgba(255,105,133,.12);background:#fff;}
-    textarea{resize:vertical;min-height:64px;line-height:1.6;}
-
-    .file-lbl{display:flex;align-items:center;gap:9px;padding:10px 13px;background:#fafbfc;
-      border:1.5px dashed var(--border);border-radius:var(--rs);cursor:pointer;
-      font-size:13px;font-weight:600;color:var(--muted);transition:all .18s;}
-    .file-lbl:hover{background:#f0f2f7;border-color:var(--p);}
-    .file-lbl.attached{background:#fff;border-style:solid;border-color:var(--p);color:var(--p);}
-    input[type=file]{display:none;}
-
-    /* ── Banner Card ── */
-    .banners-sec{margin-top:20px;}
-    .banner-card{border:1.5px solid var(--border);border-radius:var(--rs);margin-bottom:13px;overflow:hidden;}
-    .banner-card:focus-within{box-shadow:0 0 0 3px rgba(255,105,133,.12);border-color:var(--p);}
-
-    .banner-hd{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--pl);border-bottom:1.5px solid var(--border);}
-    .banner-badge{background:var(--p);color:#fff;font-size:10px;font-weight:800;width:20px;height:20px;
-      border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .banner-hd input[type=text]{flex:1;border:none;background:transparent;padding:3px 5px;font-size:14px;font-weight:700;color:var(--txt);}
-    .banner-hd input[type=text]:focus{outline:none;box-shadow:none;}
-    .btn-del-ban{background:none;border:1.5px solid #f0b3bb;color:var(--p);border-radius:6px;
-      padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;flex-shrink:0;}
-    .btn-del-ban:hover{background:var(--p);color:#fff;}
-
-    .banner-body{padding:10px 12px;display:flex;flex-direction:column;gap:10px;}
-    .banner-ft{padding:5px 12px 10px;display:flex;}
-
-    /* ── Group Type Picker ── */
-    .type-picker{display:flex;gap:8px;padding:10px;background:var(--gbg);border-radius:var(--rs);border:1.5px dashed var(--border);}
-    .type-picker span{font-size:12px;font-weight:700;color:var(--muted);align-self:center;margin-right:4px;white-space:nowrap;}
-    .type-btn{flex:1;border:1.5px solid var(--border);border-radius:var(--rs);background:#fff;padding:10px 8px;
-      font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .18s;text-align:center;line-height:1.4;}
-    .type-btn:hover{border-color:var(--p);color:var(--p);}
-    .type-btn .tb-icon{font-size:18px;display:block;margin-bottom:3px;}
-
-    /* ── Group Card ── */
-    .grp-card{background:var(--gbg);border:1.5px solid var(--border);border-radius:var(--rs);overflow:hidden;}
-
-    /* price-type header */
-    .grp-hd{display:flex;align-items:center;gap:8px;padding:7px 11px;border-bottom:1px solid var(--border);}
-    .grp-hd-price{background:#fff0f3;}
-    .grp-hd-text {background:#e8faf9;}
-    .grp-dot-price{width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0;}
-    .grp-dot-text {width:8px;height:8px;border-radius:50%;background:var(--teal);flex-shrink:0;}
-    .grp-type-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;flex-shrink:0;}
-    .grp-type-badge-price{background:var(--p);color:#fff;}
-    .grp-type-badge-text {background:var(--teal);color:#fff;}
-    .grp-hd textarea,.grp-hd input[type=text]{flex:1;border:none;background:transparent;padding:2px 4px;
-      font-size:13px;font-weight:700;color:var(--txt);font-family:inherit;resize:none;overflow:hidden;min-height:28px;line-height:1.5;}
-    .grp-hd textarea:focus,.grp-hd input[type=text]:focus{outline:none;box-shadow:none;}
-    .btn-del-grp{background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;transition:color .15s;padding:2px 4px;flex-shrink:0;}
-    .btn-del-grp:hover{color:var(--p);}
-
-    /* text-type body */
-    .grp-body-text{padding:9px 11px;display:flex;flex-direction:column;gap:8px;}
-    .grp-body-text textarea{min-height:54px;}
-
-    /* price-type body */
-    .opts-list{padding:8px 11px;display:flex;flex-direction:column;gap:7px;}
-    .grp-ft{padding:5px 11px 9px;}
-
-    /* ── Option Row ── */
-    .opt-row{display:grid;grid-template-columns:0.75fr 76px 1fr auto;gap:7px;align-items:end;}
-    .opt-field{display:flex;flex-direction:column;gap:3px;}
-    .opt-tag{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.04em;}
-    .opt-row input[type=text]{padding:7px 9px;font-size:12px;}
-
-    .capsule-inp{background:#fff0f3;border-color:#f8c4cc!important;text-align:center;font-weight:700;color:var(--p);}
-    .capsule-inp:focus{border-color:var(--p)!important;}
-    .price-inp{color:var(--p);font-weight:800;font-size:13px!important;}
-
-    /* mode toggle */
-    .mtoggle{display:flex;border:1.5px solid var(--border);border-radius:6px;overflow:hidden;height:35px;}
-    .mtoggle button{flex:1;border:none;background:#fafbfc;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s;padding:0 3px;}
-    .mtoggle button.on{background:var(--p);color:#fff;}
-    .mtoggle button:hover:not(.on){background:#f0f2f7;}
-
-    .btn-del-opt{background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;transition:color .15s;padding:4px 2px;}
-    .btn-del-opt:hover{color:var(--p);}
-
-    /* ── Add Buttons ── */
-    .btn-add-opt{background:none;border:1.5px dashed #c0c9d8;border-radius:6px;color:var(--muted);
-      font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;}
-    .btn-add-opt:hover{border-color:var(--p);color:var(--p);background:var(--pl);}
-
-    .btn-add-grp{width:100%;background:none;border:1.5px dashed #c0c9d8;border-radius:var(--rs);color:var(--muted);
-      font-size:13px;font-weight:600;padding:8px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;}
-    .btn-add-grp:hover{border-color:var(--p);color:var(--p);background:var(--pl);}
-
-    .btn-add-ban{width:100%;padding:10px;background:none;border:2px dashed #c0c9d8;border-radius:var(--rs);
-      font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:7px;}
-    .btn-add-ban:hover{border-color:var(--p);color:var(--p);background:var(--pl);}
-
-    /* ── Action ── */
-    .act-sec{margin-top:20px;}
-    .btn-row{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px;}
-    .btn-prow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    button{font-family:inherit;cursor:pointer;border:none;transition:all .15s;}
-    button:active{transform:scale(.98);}
-    .btn-gen{background:var(--a);color:#000;border-radius:var(--rs);padding:14px;font-size:15px;font-weight:800;letter-spacing:-.3px;}
-    .btn-gen:hover{background:var(--ad);}
-    .btn-dl{background:var(--txt);color:#fff;border-radius:var(--rs);padding:14px;font-size:14px;font-weight:700;display:none;}
-    .btn-dl:hover{opacity:.85;}
-    .btn-proj{background:#f4f5f8;color:var(--txt);border:1.5px solid var(--border);border-radius:var(--rs);padding:10px;font-size:13px;font-weight:700;}
-    .btn-proj:hover{background:#e9ecf2;}
-
-    /* ── Preview ── */
-    .prev-card{position:sticky;top:36px;max-height:calc(100vh - 72px);display:flex;flex-direction:column;}
-    .prev-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
-      margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-    .prev-scroll{background:#dde1ea;border-radius:var(--r);padding:20px;overflow-y:auto;
-      box-shadow:var(--shl);display:flex;flex-direction:column;gap:20px;align-items:center;flex:1;min-height:400px;}
-    .prev-scroll img{max-width:100%;height:auto;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.18);}
-    .prev-ph{color:#888;font-size:14px;font-weight:600;margin:auto;text-align:center;padding:60px 20px;line-height:2;}
-    .prev-hint{text-align:center;font-size:12px;color:#999;margin-top:9px;}
-
-    /* ── Type-picker modal overlay ── */
-    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;display:flex;align-items:center;justify-content:center;}
-    .modal{background:#fff;border-radius:var(--r);padding:28px;box-shadow:var(--shl);min-width:320px;max-width:90vw;}
-    .modal h3{font-size:16px;font-weight:800;margin-bottom:6px;}
-    .modal p{font-size:12px;color:var(--muted);margin-bottom:18px;}
-    .modal-types{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    .modal-type-btn{border:2px solid var(--border);border-radius:var(--rs);background:#fafbfc;padding:18px 12px;
-      cursor:pointer;font-family:inherit;text-align:center;transition:all .18s;}
-    .modal-type-btn:hover{border-color:var(--p);background:var(--pl);}
-    .modal-type-btn .mti{font-size:28px;display:block;margin-bottom:8px;}
-    .modal-type-btn .mtt{font-size:13px;font-weight:800;color:var(--txt);display:block;}
-    .modal-type-btn .mtd{font-size:11px;color:var(--muted);margin-top:3px;display:block;}
-    .modal-cancel{margin-top:14px;width:100%;padding:10px;background:#f4f5f8;border:none;border-radius:var(--rs);
-      font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;}
-    .modal-cancel:hover{background:#e9ecf2;}
-  </style>
+  <link rel="stylesheet" href="./이벤트.css">
 </head>
+
 <body>
-<div class="wrap">
-
-  <!-- ===== 입력 패널 ===== -->
-  <div class="card">
-    <div class="app-head">
+  <div class="bg-blur">
+    <div class="blob" style="top: 10%; left: 10%;"></div>
+    <div class="blob" style="top: 60%; left: 80%; width: 400px; height: 400px; background: var(--accent);"></div>
+  </div>
+  <div class="container">
+    <div class="input-card glass-card">
       <h1>바로그 월이벤트 생성기</h1>
-      <p>배너 › 그룹(가격형·텍스트형) › 옵션 — 3단 계층 구조</p>
-    </div>
 
-    <div class="slbl">📋 기본 정보</div>
-    <div class="frow">
-      <div class="fg">
-        <label class="flbl" for="topTitle">상단 제목 <span class="tip">공란 시 생략</span></label>
-        <input type="text" id="topTitle" value="바로그 구미점 4월 이벤트">
-      </div>
-      <div class="fg">
-        <label class="flbl" for="topDate">이벤트 기간 <span class="tip">공란 시 생략</span></label>
-        <input type="text" id="topDate" value="2026.04.01 - 2026.04.30">
-      </div>
-    </div>
-    <div class="fg">
-      <label class="flbl" for="botText">하단 문구 <span class="tip">외국어 제작 시 해당 언어로 수정</span></label>
-      <input type="text" id="botText" value="부가세별도">
-    </div>
-    <div class="fg">
-      <label class="flbl">배경 이미지</label>
-      <label for="bgInput" class="file-lbl" id="fileLabel">
-        <span>🖼️</span><span id="fileLabelText">배경 이미지 파일을 선택하세요</span>
-      </label>
-      <input type="file" id="bgInput" accept="image/*">
-    </div>
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group">
+            <span class="label">상단 제목 <span class="tip">※ 불필요한 경우 공란</span></span>
+            <input type="text" id="topTitle" value="바로그 강남점 4월 이벤트">
+          </div>
 
-    <div class="banners-sec">
-      <div class="slbl">🏷️ 배너 관리</div>
-      <div id="bannersContainer"></div>
-      <button class="btn-add-ban" onclick="addBanner()">➕ 배너 추가</button>
-    </div>
-
-    <div class="act-sec">
-      <div class="btn-row">
-        <button class="btn-gen" onclick="generateImages()">⚡ 생성하기 (Ctrl+S)</button>
-        <button class="btn-dl" id="downloadBtn" onclick="downloadAllImages()">⬇ 전체 다운로드</button>
-      </div>
-      <div class="btn-prow">
-        <button class="btn-proj" onclick="saveProject()">💾 내용 백업 (저장)</button>
-        <button class="btn-proj" onclick="document.getElementById('projectInput').click()">📂 내용 불러오기</button>
-        <input type="file" id="projectInput" accept=".json" style="display:none;" onchange="loadProject(event)">
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== 미리보기 ===== -->
-  <div class="prev-card">
-    <div class="prev-hd">🖼 미리보기</div>
-    <div class="prev-scroll" id="previewContainer">
-      <div class="prev-ph" id="placeholder">
-        배경 이미지를 선택한 뒤<br>그룹과 옵션을 입력하고<br><strong>생성하기</strong>를 눌러주세요
-      </div>
-    </div>
-    <p class="prev-hint">이미지가 여러 장일 경우 스크롤하여 확인하세요</p>
-  </div>
-</div>
-
-<!-- ===== 그룹 타입 선택 모달 ===== -->
-<div class="modal-bg" id="typeModal" style="display:none;" onclick="closeModal(event)">
-  <div class="modal">
-    <h3>그룹 타입 선택</h3>
-    <p>추가할 그룹의 종류를 선택하세요</p>
-    <div class="modal-types">
-      <button class="modal-type-btn" onclick="confirmAddGroup('price')">
-        <span class="mti">💰</span>
-        <span class="mtt">가격형</span>
-        <span class="mtd">시술명 + 단가 옵션</span>
-      </button>
-      <button class="modal-type-btn" onclick="confirmAddGroup('text')">
-        <span class="mti">📝</span>
-        <span class="mtt">텍스트형</span>
-        <span class="mtd">제목 + 설명 문구</span>
-      </button>
-    </div>
-    <button class="modal-cancel" onclick="closeModal()">취소</button>
-  </div>
-</div>
-
-<script>
-/* =====================================================================
-   DATA STRUCTURE (version 4)
-   eventData = [
-     { id, title,  ← Banner
-       groups: [
-         // 가격형
-         { gid, type:'price', name, options:[ {oid, capsule, priceText} ] }
-         // 텍스트형
-         { gid, type:'text',  title, body }
-       ]
-     }
-   ]
-===================================================================== */
-
-let eventData = [];
-let generatedImagesUrls = [];
-let cachedBgImg = null;
-let _bid = 0, _gid = 0, _oid = 0;
-let _pendingBannerId = null;  // 모달에서 사용
-
-const CFG = {
-  w:1000, h:1000,
-  fMain:  "'Pretendard','Noto Sans JP','Noto Sans SC','Noto Sans Thai',sans-serif",
-  fBold:  "'GmarketSansBold','Noto Sans JP','Noto Sans SC','Noto Sans Thai',sans-serif",
-  fMed:   "'GmarketSansMedium','Noto Sans JP','Noto Sans SC','Noto Sans Thai',sans-serif",
-};
-
-/* ─── 유틸 ─── */
-function esc(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''; }
-function autoH(ta){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
-function getBanner(bid){ return eventData.find(b=>b.id===bid); }
-function getGroup(bid,gid){ const b=getBanner(bid); return b?b.groups.find(g=>g.gid===gid):null; }
-function getOpt(bid,gid,oid){ const g=getGroup(bid,gid); return g&&g.options?g.options.find(o=>o.oid===oid):null; }
-
-/* ─────────────────────────────────────────
-   모달
-───────────────────────────────────────── */
-function showAddGroupModal(bid){
-  _pendingBannerId = bid;
-  document.getElementById('typeModal').style.display='flex';
-}
-function closeModal(e){
-  if(!e || e.target===document.getElementById('typeModal')){
-    document.getElementById('typeModal').style.display='none';
-    _pendingBannerId = null;
-  }
-}
-function confirmAddGroup(type){
-  document.getElementById('typeModal').style.display='none';
-  if(_pendingBannerId!==null) addGroup(_pendingBannerId, null, type);
-  _pendingBannerId=null;
-}
-
-/* ─────────────────────────────────────────
-   BANNER
-───────────────────────────────────────── */
-function addBanner(data=null){
-  _bid++;
-  const bid=_bid;
-  const title=data?data.title:`배너 ${bid}`;
-  const el=document.createElement('div');
-  el.className='banner-card'; el.dataset.bid=bid;
-  el.innerHTML=`
-    <div class="banner-hd">
-      <div class="banner-badge">${bid}</div>
-      <input type="text" placeholder="배너 제목 (예: 필러 이벤트)" value="${esc(title)}"
-        oninput="getBanner(${bid}).title=this.value">
-      <button class="btn-del-ban" onclick="delBanner(${bid})">❌ 삭제</button>
-    </div>
-    <div class="banner-body" id="groups-${bid}"></div>
-    <div class="banner-ft">
-      <button class="btn-add-grp" onclick="showAddGroupModal(${bid})">➕ 항목 그룹 추가</button>
-    </div>`;
-  document.getElementById('bannersContainer').appendChild(el);
-  eventData.push({id:bid, title, groups:[]});
-
-  if(data&&data.groups&&data.groups.length>0){
-    data.groups.forEach(g=>addGroup(bid,g,g.type));
-  }else{
-    addGroup(bid,null,'price');
-  }
-}
-function delBanner(bid){
-  if(document.querySelectorAll('.banner-card').length<=1){alert('최소 1개의 배너는 유지해야 합니다.');return;}
-  document.querySelector(`.banner-card[data-bid="${bid}"]`).remove();
-  eventData=eventData.filter(b=>b.id!==bid);
-}
-
-/* ─────────────────────────────────────────
-   GROUP (가격형 / 텍스트형)
-───────────────────────────────────────── */
-function addGroup(bid, data=null, type='price'){
-  _gid++;
-  const gid=_gid;
-  const banner=getBanner(bid);
-  if(!banner) return;
-
-  if(type==='price'){
-    const name=data?data.name:'';
-    banner.groups.push({gid, type:'price', name, options:[]});
-
-    const el=document.createElement('div');
-    el.className='grp-card'; el.dataset.bid=bid; el.dataset.gid=gid;
-    el.innerHTML=`
-      <div class="grp-hd grp-hd-price">
-        <div class="grp-dot-price"></div>
-        <span class="grp-type-badge grp-type-badge-price">가격형</span>
-        <textarea rows="1" placeholder="항목명 (예: 필러, 줄바꿈 가능)"
-          oninput="autoH(this);(getGroup(${bid},${gid})||{}).name=this.value">${esc(name)}</textarea>
-        <button class="btn-del-grp" onclick="delGroup(${bid},${gid})" title="그룹 삭제">✕</button>
-      </div>
-      <div class="opts-list" id="opts-${bid}-${gid}"></div>
-      <div class="grp-ft">
-        <button class="btn-add-opt" onclick="addOpt(${bid},${gid})">＋ 옵션 추가</button>
-      </div>`;
-    document.getElementById(`groups-${bid}`).appendChild(el);
-    const ta=el.querySelector('textarea'); if(ta) setTimeout(()=>autoH(ta),0);
-
-    if(data&&data.options&&data.options.length>0){
-      data.options.forEach(o=>addOpt(bid,gid,o));
-    }else{
-      addOpt(bid,gid);
-    }
-
-  }else{
-    // 텍스트형
-    const ttl =data?data.title:'';
-    const body=data?data.body:'';
-    banner.groups.push({gid, type:'text', title:ttl, body});
-
-    const el=document.createElement('div');
-    el.className='grp-card'; el.dataset.bid=bid; el.dataset.gid=gid;
-    el.innerHTML=`
-      <div class="grp-hd grp-hd-text">
-        <div class="grp-dot-text"></div>
-        <span class="grp-type-badge grp-type-badge-text">텍스트형</span>
-        <input type="text" placeholder="대표 제목 (예: ※ 주의사항)"
-          value="${esc(ttl)}"
-          oninput="(getGroup(${bid},${gid})||{}).title=this.value">
-        <button class="btn-del-grp" onclick="delGroup(${bid},${gid})" title="그룹 삭제">✕</button>
-      </div>
-      <div class="grp-body-text">
-        <div class="opt-field">
-          <span class="opt-tag">설명 텍스트 (줄바꿈 허용)</span>
-          <textarea placeholder="예: 사전 예약 후 방문 부탁드립니다.&#10;문의: 054-000-0000"
-            oninput="(getGroup(${bid},${gid})||{}).body=this.value">${esc(body)}</textarea>
+          <div class="form-group">
+            <span class="label">이벤트 기간 <span class="tip">※ 불필요한 경우 공란</span></span>
+            <input type="text" id="topDate" value="2026.04.01 - 2026.04.30">
+          </div>
         </div>
-      </div>`;
-    document.getElementById(`groups-${bid}`).appendChild(el);
-    const tas=el.querySelectorAll('textarea'); tas.forEach(ta=>setTimeout(()=>autoH(ta),0));
-  }
-}
-function delGroup(bid,gid){
-  const banner=getBanner(bid);
-  if(banner&&banner.groups.length<=1){alert('최소 1개의 항목 그룹은 유지해야 합니다.');return;}
-  document.querySelector(`.grp-card[data-bid="${bid}"][data-gid="${gid}"]`).remove();
-  if(banner) banner.groups=banner.groups.filter(g=>g.gid!==gid);
-}
+      </div>
 
-/* ─────────────────────────────────────────
-   OPTION (가격형 그룹 전용)
-───────────────────────────────────────── */
-function addOpt(bid,gid,data=null){
-  _oid++;
-  const oid=_oid;
-  const capsule   = data?(data.capsule||''):'';
-  const priceText = data?(data.priceText||''):'';   // 단일 문자열 (자동/직접 통합)
-  const priceMode = data?(data.priceMode||'direct'):'direct';
+      <div class="form-section">
+        <span class="label">항목 데이터 <span class="tip">※ &lt;&gt; 안에 텍스트를 넣으면 강조</span></span>
 
-  const grp=getGroup(bid,gid);
-  if(grp) grp.options.push({oid, capsule, priceText, priceMode});
+        <div id="itemsContainer">
+        </div>
 
-  /* 자동 모드는 priceText를 그대로 씀 — 렌더 시 숫자 감지 로직으로 처리 */
-  const el=document.createElement('div');
-  el.className='opt-row'; el.dataset.oid=oid;
-  el.innerHTML=`
-    <div class="opt-field">
-      <span class="opt-tag">단위 캡슐</span>
-      <input type="text" class="capsule-inp" placeholder="예: 1cc" value="${esc(capsule)}"
-        oninput="syncOpt(${bid},${gid},${oid},'capsule',this.value)">
-    </div>
-    <div class="opt-field">
-      <span class="opt-tag">가격 방식</span>
-      <div class="mtoggle">
-        <button class="${priceMode==='direct'?'on':''}" onclick="setMode(${bid},${gid},${oid},'direct',this)">직접</button>
-        <button class="${priceMode==='auto'?'on':''}"   onclick="setMode(${bid},${gid},${oid},'auto',this)">자동</button>
+        <div class="add-controls">
+          <button class="btn-add" onclick="addItemRow()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            항목 추가
+          </button>
+          <button class="btn-add btn-add-page" onclick="addSectionTitle()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            제목 추가
+          </button>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-group">
+          <span class="label">하단 문구 <span class="tip">※ 외국어 제작 시 각 언어로 수정</span></span>
+          <input type="text" id="botText" value="부가세별도">
+        </div>
+
+        <div class="file-input-wrapper" id="dropZone">
+          <label class="file-label" id="fileLabel">배경 이미지 파일 선택 또는 드래그</label>
+          <input type="file" id="bgInput" accept="image/*">
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button class="btn-generate" onclick="generateImages()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+            style="margin-right:8px; vertical-align:middle;">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+            <polyline points="14 2 14 8 20 8" />
+            <path d="M12 18v-6" />
+            <path d="m9 15 3 3 3-3" />
+          </svg>
+          이미지 생성하기 (Ctrl+S)
+        </button>
+        <button class="btn-download" id="downloadBtn" onclick="downloadAllImages()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+            style="margin-right:8px; vertical-align:middle;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" x2="12" y1="15" y2="3" />
+          </svg>
+          전체 다운로드
+        </button>
+      </div>
+
+      <div class="project-actions">
+        <button class="btn-project" onclick="saveProject()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            style="margin-right:6px; vertical-align:middle;">
+            <path
+              d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+            <rect width="7" height="8" x="8" y="3" rx="1" />
+            <path d="M7 21v-7a1 1 0 0 1 1-1h8a1 1 0 0 1 1-1v7" />
+          </svg>
+          내용 백업
+        </button>
+        <button class="btn-project" onclick="document.getElementById('projectInput').click()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            style="margin-right:6px; vertical-align:middle;">
+            <path
+              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.7 1.1h1.1" />
+            <path d="m11 13 3 3 3-3" />
+            <path d="M14 17V10" />
+          </svg>
+          백업 불러오기
+        </button>
+        <input type="file" id="projectInput" accept=".json" style="display: none;" onchange="loadProject(event)">
       </div>
     </div>
-    <div class="opt-field">
-      <span class="opt-tag price-mode-tag">${priceMode==='auto'?'숫자+한글 입력 → 자동 강조':'가격 전체 텍스트'}</span>
-      <input type="text" class="price-inp" placeholder="${priceMode==='auto'?'예: 70만원, 9만9천':'예: 199만원'}"
-        value="${esc(priceText)}"
-        oninput="syncOpt(${bid},${gid},${oid},'priceText',this.value)">
+
+    <div class="preview-card glass-card">
+      <div class="preview-container" id="previewContainer">
+        <div class="placeholder-text" id="placeholder">
+          <p style="font-size: 40px; margin-bottom: 20px;">🖼️</p>
+          배경 이미지 선택 후 생성하기를 눌러주세요.
+        </div>
+      </div>
+      <p style="text-align:center; font-size:12px; color:var(--text-muted); margin-top:8px; font-weight: 500;">
+        이미지가 여러 장일 경우 스크롤하여 확인할 수 있습니다.
+      </p>
     </div>
-    <button class="btn-del-opt" onclick="delOpt(${bid},${gid},${oid})" title="삭제">✕</button>`;
-  document.getElementById(`opts-${bid}-${gid}`).appendChild(el);
-}
+  </div>
 
-function setMode(bid,gid,oid,mode,btn){
-  const opt=getOpt(bid,gid,oid);
-  if(opt) opt.priceMode=mode;
-  const row=btn.closest('.opt-row');
-  row.querySelectorAll('.mtoggle button').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  // 태그 및 placeholder 갱신
-  const tag=row.querySelector('.price-mode-tag');
-  const inp=row.querySelector('.price-inp');
-  if(mode==='auto'){
-    if(tag) tag.textContent='숫자+한글 입력 → 자동 강조';
-    if(inp) inp.placeholder='예: 70만원, 9만9천';
-  }else{
-    if(tag) tag.textContent='가격 전체 텍스트';
-    if(inp) inp.placeholder='예: 199만원';
-  }
-}
-function syncOpt(bid,gid,oid,field,value){
-  const opt=getOpt(bid,gid,oid);
-  if(opt) opt[field]=value;
-}
-function delOpt(bid,gid,oid){
-  const grp=getGroup(bid,gid);
-  if(grp&&grp.options.length<=1){alert('최소 1개의 옵션은 유지해야 합니다.');return;}
-  document.querySelector(`.opt-row[data-oid="${oid}"]`).remove();
-  if(grp) grp.options=grp.options.filter(o=>o.oid!==oid);
-}
-
-/* ─────────────────────────────────────────
-   배경 이미지
-───────────────────────────────────────── */
-document.getElementById('bgInput').addEventListener('change',function(e){
-  const fl=document.getElementById('fileLabel'), lt=document.getElementById('fileLabelText');
-  if(e.target.files&&e.target.files.length>0){
-    lt.textContent=e.target.files[0].name; fl.classList.add('attached');
-    const r=new FileReader();
-    r.onload=ev=>{const img=new Image();img.src=ev.target.result;img.onload=()=>cachedBgImg=img;};
-    r.readAsDataURL(e.target.files[0]);
-  }else{lt.textContent='배경 이미지 파일을 선택하세요';fl.classList.remove('attached');cachedBgImg=null;}
-});
-
-/* ─────────────────────────────────────────
-   JSON 백업
-───────────────────────────────────────── */
-function saveProject(){
-  const data={
-    version:4,
-    topTitle:document.getElementById('topTitle').value,
-    topDate: document.getElementById('topDate').value,
-    botText: document.getElementById('botText').value,
-    banners: eventData.map(b=>({
-      title:b.title,
-      groups:b.groups.map(g=>{
-        if(g.type==='price') return {type:'price', name:g.name, options:g.options.map(o=>({capsule:o.capsule,priceText:o.priceText,priceMode:o.priceMode}))};
-        return {type:'text', title:g.title, body:g.body};
-      })
-    }))
-  };
-  const a=document.createElement('a');
-  a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(data,null,2));
-  a.download=`이벤트_백업_${Date.now()}.json`;
-  document.body.appendChild(a);a.click();a.remove();
-}
-function loadProject(event){
-  const file=event.target.files[0]; if(!file)return;
-  const r=new FileReader();
-  r.onload=e=>{
-    try{
-      const data=JSON.parse(e.target.result);
-      if(data.version!==4){alert('이 파일은 이전 버전 백업 파일입니다.\n(v4 형식과 호환되지 않습니다)');return;}
-      document.getElementById('topTitle').value=data.topTitle||'';
-      document.getElementById('topDate').value =data.topDate||'';
-      document.getElementById('botText').value =data.botText||'';
-      document.getElementById('bannersContainer').innerHTML='';
-      eventData=[]; _bid=0; _gid=0; _oid=0;
-      (data.banners&&data.banners.length>0?data.banners:[null]).forEach(b=>addBanner(b));
-      alert('내용을 성공적으로 불러왔습니다!');
-    }catch(err){console.error(err);alert('잘못된 백업 파일입니다.');}
-  };
-  r.readAsText(file); event.target.value='';
-}
-
-/* ─────────────────────────────────────────
-   이미지 생성
-───────────────────────────────────────── */
-async function generateImages(){
-  if(!cachedBgImg){alert('배경 이미지를 먼저 선택해주세요!');return;}
-  const valid=eventData.filter(b=>b.groups.length>0);
-  if(!valid.length){alert('최소 1개 이상의 그룹을 추가해주세요.');return;}
-  await document.fonts.ready;
-  const pc=document.getElementById('previewContainer');
-  pc.innerHTML=''; generatedImagesUrls=[];
-  const topTitle=document.getElementById('topTitle').value;
-  const topDate =document.getElementById('topDate').value;
-  const botText =document.getElementById('botText').value;
-  valid.forEach(banner=>{
-    const url=drawCanvas(cachedBgImg,banner,topTitle,topDate,botText);
-    generatedImagesUrls.push(url);
-    const img=document.createElement('img');img.src=url;pc.appendChild(img);
-  });
-  document.getElementById('downloadBtn').style.display='block';
-}
-function downloadAllImages(){
-  if(!generatedImagesUrls.length)return;
-  if(generatedImagesUrls.length===1){
-    const a=document.createElement('a');a.download=`event_${Date.now()}.jpg`;a.href=generatedImagesUrls[0];a.click();
-  }else{
-    const zip=new JSZip();
-    generatedImagesUrls.forEach((u,i)=>zip.file(`event_${i+1}.jpg`,u.replace(/^data:image\/(png|jpeg);base64,/,''),{base64:true}));
-    zip.generateAsync({type:'blob'}).then(b=>saveAs(b,`이벤트패키지_${Date.now()}.zip`));
-  }
-}
-
-/* ─────────────────────────────────────────
-   Canvas 유틸
-───────────────────────────────────────── */
-function wrapChar(ctx,text,maxW){
-  const res=[];
-  String(text||'').split('\n').forEach(para=>{
-    let cur='';
-    for(let i=0;i<para.length;i++){
-      const t=cur+para[i];
-      if(ctx.measureText(t).width>maxW&&i>0){res.push(cur);cur=para[i];}else cur=t;
-    }
-    res.push(cur);
-  });
-  return res;
-}
-function rRect(ctx,x,y,w,h,r){
-  ctx.beginPath();ctx.moveTo(x+r,y);
-  ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
-  ctx.closePath();ctx.fill();
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   ★ 스마트 숫자 감지 가격 렌더링 엔진 ★
-
-   priceText를 "토큰 배열"로 분해:
-     [{t:'num', s:'9'}, {t:'txt', s:'만'}, {t:'num', s:'9'}, {t:'txt', s:'천'}, ...]
-   각 토큰을 개별 폰트로 그리되, 모든 토큰의 총 너비를 먼저 계산하여
-   우측 정렬(baseX = EX) 기준으로 오른쪽→왼쪽 방향으로 순서대로 배치.
-──────────────────────────────────────────────────────────────── */
-const FONT_NUM    = (fMain)=>`800 54px ${fMain}`;
-const FONT_TXT    = (fMain)=>`700 32px ${fMain}`;
-const LS_NUM      = '-3px';
-const LS_TXT      = '-1px';
-const COLOR_NUM   = '#ff6985';
-const COLOR_TXT   = 'black';
-const BASELINE_OFFSET_NUM = 18; // alphabetic baseline offset from row center
-const BASELINE_OFFSET_TXT = 11;
-
-function tokenizePrice(str){
-  const tokens=[];
-  let buf='', isNum=null;
-  for(const ch of String(str||'')){
-    const n=/[0-9０-９]/.test(ch); // 전각 숫자도 포함
-    if(isNum===null) isNum=n;
-    if(n===isNum){ buf+=ch; }
-    else{ tokens.push({t:isNum?'num':'txt', s:buf}); buf=ch; isNum=n; }
-  }
-  if(buf) tokens.push({t:isNum?'num':'txt',s:buf});
-  return tokens;
-}
-
-/**
- * 가격 문자열을 canvas에 우측 정렬로 렌더링.
- * @returns 렌더된 총 너비
- */
-function drawSmartPrice(ctx, priceText, rightX, centerY, fMain){
-  const tokens=tokenizePrice(priceText);
-  if(!tokens.length) return 0;
-
-  // 1) 각 토큰 너비 측정
-  const measured=tokens.map(tok=>{
-    if(tok.t==='num'){
-      ctx.font=FONT_NUM(fMain); ctx.letterSpacing=LS_NUM;
-    }else{
-      ctx.font=FONT_TXT(fMain); ctx.letterSpacing=LS_TXT;
-    }
-    return {...tok, w: ctx.measureText(tok.s).width};
-  });
-
-  // 2) 오른쪽→왼쪽 순으로 그리기
-  ctx.textBaseline='alphabetic';
-  let curX=rightX;
-  for(let i=measured.length-1;i>=0;i--){
-    const tok=measured[i];
-    if(tok.t==='num'){
-      ctx.font=FONT_NUM(fMain); ctx.letterSpacing=LS_NUM;
-      ctx.fillStyle=COLOR_NUM;
-      ctx.textAlign='right';
-      ctx.fillText(tok.s, curX, centerY+BASELINE_OFFSET_NUM);
-    }else{
-      ctx.font=FONT_TXT(fMain); ctx.letterSpacing=LS_TXT;
-      ctx.fillStyle=COLOR_TXT;
-      ctx.textAlign='right';
-      ctx.fillText(tok.s, curX, centerY+BASELINE_OFFSET_TXT);
-    }
-    curX-=tok.w;
-  }
-
-  // 총 너비 반환
-  return measured.reduce((acc,t)=>acc+t.w,0);
-}
-
-/**
- * 가격 문자열의 총 렌더 너비를 측정만 함 (그리지 않음).
- */
-function measureSmartPrice(ctx, priceText, fMain){
-  const tokens=tokenizePrice(priceText);
-  return tokens.reduce((acc,tok)=>{
-    if(tok.t==='num'){ ctx.font=FONT_NUM(fMain); ctx.letterSpacing=LS_NUM; }
-    else{ ctx.font=FONT_TXT(fMain); ctx.letterSpacing=LS_TXT; }
-    return acc+ctx.measureText(tok.s).width;
-  },0);
-}
-
-/* ─────────────────────────────────────────
-   Canvas 메인 렌더 함수
-───────────────────────────────────────── */
-function drawCanvas(bgImg, banner, topTitle, topDate, botText){
-  const canvas=document.createElement('canvas');
-  const ctx=canvas.getContext('2d');
-  canvas.width=CFG.w; canvas.height=CFG.h;
-
-  const SX=105, EX=895;
-  const OPT_GAP   =46;  // 같은 그룹 내 옵션 행 간격
-  const GRP_SEP   =62;  // 그룹 사이 여백 (구분선 포함)
-  const TXT_LINE_H=38;  // 항목명 줄 간격
-  const CAP_GAP   =22;  // 캡슐 ~ 가격 간격
-  const PAD_V     =16;
-  const ITEM_HALF =22;
-  const fMain=CFG.fMain, fBold=CFG.fBold, fMed=CFG.fMed;
-
-  /* ── 사전 계산 ── */
-  const groups=banner.groups;
-
-  groups.forEach(grp=>{
-    if(grp.type==='price'){
-      /* 가격 최대 너비 */
-      grp._maxPriceW=0;
-      grp.options.forEach(opt=>{
-        const pw=measureSmartPrice(ctx, opt.priceText, fMain);
-        opt._priceW=pw;
-        if(pw>grp._maxPriceW) grp._maxPriceW=pw;
-      });
-
-      /* 캡슐 최대 너비 */
-      grp._maxCapW=0;
-      ctx.font=`800 27px ${fMain}`; ctx.letterSpacing='0px';
-      grp.options.forEach(opt=>{
-        if(opt.capsule){const w=ctx.measureText(opt.capsule).width+30;if(w>grp._maxCapW)grp._maxCapW=w;}
-      });
-
-      /* 항목명 줄바꿈 */
-      const priceRight=EX-grp._maxPriceW;
-      const capRight=grp._maxCapW>0?(priceRight-CAP_GAP-grp._maxCapW):priceRight;
-      const maxTxtW=capRight-SX-10;
-      ctx.font=`700 27px ${fMain}`; ctx.letterSpacing='-1px';
-      grp._nameLines=wrapChar(ctx, grp.name||'', maxTxtW);
-
-      const nameH=(grp._nameLines.length-1)*TXT_LINE_H;
-      const optsH=(grp.options.length-1)*OPT_GAP;
-      grp._spanH=Math.max(nameH, optsH);
-
-    }else{
-      /* 텍스트형: 제목 + 설명 */
-      ctx.font=`700 26px ${fMain}`; ctx.letterSpacing='-1px';
-      grp._titleLines=wrapChar(ctx, grp.title||'', EX-SX);
-      ctx.font=`500 22px ${fMain}`; ctx.letterSpacing='-0.5px';
-      grp._bodyLines=wrapChar(ctx, grp.body||'', EX-SX);
-      const titleH=grp._titleLines.length*32;
-      const bodyH =grp._bodyLines.length*30;
-      grp._spanH=titleH+(grp._bodyLines.length>0?8+bodyH:0);
-    }
-  });
-
-  /* ── 총 리스트 높이 ── */
-  let totalH=0;
-  groups.forEach((g,i)=>{totalH+=g._spanH;if(i<groups.length-1)totalH+=GRP_SEP;});
-
-  /* ── 배너 타이틀 박스 높이 ── */
-  ctx.font=`49px ${fBold}`; ctx.letterSpacing='-2px';
-  const titleLines=wrapChar(ctx,(banner.title||''),800);
-  const TITLE_LH=58;
-  const bannerH=Math.max(95, titleLines.length*TITLE_LH+30);
-  const whiteH=PAD_V+ITEM_HALF+totalH+ITEM_HALF+PAD_V;
-  const boxH=bannerH+whiteH;
-  const boxY=500-boxH/2;
-
-  /* ── 배경 ── */
-  const ir=bgImg.width/bgImg.height;
-  ctx.drawImage(bgImg,0,(1000-1000/ir)/2,1000,1000/ir);
-
-  /* ── 상단 제목/기간 ── */
-  ctx.textBaseline='alphabetic'; ctx.textAlign='center'; ctx.fillStyle='#ff6985';
-  ctx.font=`27px ${fMed}`; ctx.letterSpacing='-1px';
-  if(topTitle) ctx.fillText(topTitle,500,80);
-  if(topDate)  ctx.fillText(topDate, 500,115);
-
-  /* ── 배너(핑크) 박스 ── */
-  ctx.fillStyle='#ff6985'; ctx.fillRect(60,boxY,880,bannerH);
-  ctx.fillStyle='white'; ctx.font=`49px ${fBold}`; ctx.letterSpacing='-2px';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  const tsy=boxY+bannerH/2-((titleLines.length-1)*TITLE_LH)/2;
-  titleLines.forEach((l,i)=>ctx.fillText(l,500,tsy+i*TITLE_LH));
-
-  /* ── 흰색 박스 ── */
-  const whiteY=boxY+bannerH;
-  ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.fillRect(60,whiteY,880,whiteH);
-  ctx.strokeStyle='#ff6985'; ctx.lineWidth=2;
-  ctx.strokeRect(61,whiteY,878,whiteH-1);
-
-  /* ── 그룹 렌더 ── */
-  ctx.textBaseline='middle';
-  let curY=whiteY+PAD_V+ITEM_HALF;
-
-  groups.forEach((grp,gi)=>{
-    const grpCY=curY+grp._spanH/2;
-
-    if(grp.type==='price'){
-      /* 항목명 — 그룹 수직 중앙 */
-      ctx.textAlign='left'; ctx.fillStyle='black';
-      ctx.font=`700 27px ${fMain}`; ctx.letterSpacing='-1px';
-      const nameSY=grpCY-((grp._nameLines.length-1)*TXT_LINE_H)/2;
-      grp._nameLines.forEach((l,li)=>ctx.fillText(l, SX, nameSY+li*TXT_LINE_H));
-
-      /* 옵션 행들 */
-      const optSY=grpCY-((grp.options.length-1)*OPT_GAP)/2;
-      grp.options.forEach((opt,oi)=>{
-        const oy=optSY+oi*OPT_GAP;
-
-        /* 캡슐 */
-        if(opt.capsule){
-          const capRX=EX-grp._maxPriceW-(grp._maxPriceW>0?CAP_GAP:0);
-          const capLX=capRX-grp._maxCapW;
-          ctx.fillStyle='#ff6985';
-          rRect(ctx,capLX,oy-22,grp._maxCapW,44,12);
-          ctx.font=`800 27px ${fMain}`; ctx.letterSpacing='0px';
-          ctx.textAlign='center'; ctx.fillStyle='white';
-          ctx.textBaseline='middle';
-          ctx.fillText(opt.capsule, capLX+grp._maxCapW/2, oy+2);
-        }
-
-        /* ★ 스마트 가격 렌더링: 단일 문자열 → 숫자/문자 자동 분리 */
-        ctx.textBaseline='middle';
-        if(opt.priceText){
-          drawSmartPrice(ctx, opt.priceText, EX, oy, fMain);
-        }
-        ctx.textBaseline='middle';
-      });
-
-    }else{
-      /* 텍스트형 그룹 */
-      let textY=curY;
-
-      /* 대표 제목 */
-      if(grp._titleLines&&grp._titleLines.length>0){
-        ctx.font=`700 26px ${fMain}`; ctx.letterSpacing='-1px';
-        ctx.textAlign='left'; ctx.fillStyle='#ff6985';
-        ctx.textBaseline='middle';
-        grp._titleLines.forEach((l,li)=>{ctx.fillText(l,SX,textY+16+li*32);});
-        textY+=grp._titleLines.length*32;
-      }
-
-      /* 설명 텍스트 */
-      if(grp._bodyLines&&grp._bodyLines.length>0&&grp._bodyLines[0]!==''){
-        textY+=8;
-        ctx.font=`500 22px ${fMain}`; ctx.letterSpacing='-0.5px';
-        ctx.fillStyle='#444';
-        grp._bodyLines.forEach((l,li)=>{ctx.fillText(l,SX,textY+14+li*30);});
-      }
-    }
-
-    /* 그룹 사이 구분선 (같은 그룹 내 옵션 간에는 절대 그리지 않음) */
-    if(gi<groups.length-1){
-      const lineY=curY+grp._spanH+GRP_SEP/2;
-      ctx.beginPath(); ctx.moveTo(SX,lineY); ctx.lineTo(EX,lineY);
-      ctx.strokeStyle='#ff6985'; ctx.lineWidth=1; ctx.stroke();
-      curY=lineY+GRP_SEP/2;
-    }
-  });
-
-  /* ── 하단 문구 ── */
-  ctx.textBaseline='alphabetic'; ctx.textAlign='center'; ctx.fillStyle='#ff6985';
-  ctx.font=`23px ${fMed}`; ctx.letterSpacing='0px';
-  if(botText) ctx.fillText(botText,500,975);
-
-  return canvas.toDataURL('image/jpeg',0.95);
-}
-
-/* ─────────────────────────────────────────
-   초기화 — 샘플 데이터
-───────────────────────────────────────── */
-(function init(){
-  addBanner({
-    title:'필러·보톡스 이벤트',
-    groups:[
-      {
-        type:'price', name:'필러',
-        options:[
-          {capsule:'1cc',  priceText:'70만원',  priceMode:'direct'},
-          {capsule:'3cc',  priceText:'199만원', priceMode:'direct'},
-        ]
-      },
-      {
-        type:'price', name:'보톡스',
-        options:[
-          {capsule:'1부위', priceText:'10만원', priceMode:'direct'},
-          {capsule:'',      priceText:'9만9천원', priceMode:'direct'},
-        ]
-      },
-      {
-        type:'text',
-        title:'※ 유의사항',
-        body:'사전 예약 후 방문 부탁드립니다.\n자세한 문의는 매장으로 연락 주세요.'
-      }
-    ]
-  });
-})();
-
-/* ─────────────────────────────────────────
-   단축키 Ctrl+S (버그 수정: preventDefault 보장)
-───────────────────────────────────────── */
-window.addEventListener('keydown', function(e){
-  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){
-    e.preventDefault();
-    e.stopPropagation();
-    generateImages();
-  }
-}, true); // capture phase에서 처리하여 브라우저 기본 동작 완전 차단
-</script>
+  <script src="./이벤트.js"></script>
 </body>
+
 </html>
