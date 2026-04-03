@@ -22,21 +22,52 @@
       <h1>바로그 월이벤트 생성기</h1>
 
       <div class="form-section">
-        <div class="form-row">
-          <div class="form-group">
-            <span class="label">상단 제목 <span class="tip">※ 불필요한 경우 공란</span></span>
-            <input type="text" id="topTitle" value="바로그 강남점 4월 이벤트">
+        <div class="form-row-group">
+          <div class="form-group-item">
+            <div class="label-with-tip">
+              <span class="label-text">상단 제목</span>
+              <span class="label-tip">✽ 불필요한 경우 공란</span>
+            </div>
+            <input type="text" id="topTitle" value="바로그 강남점 4월 이벤트" placeholder="상단 제목 입력">
           </div>
+          <div class="form-group-item">
+            <div class="label-with-tip">
+              <span class="label-text">이벤트 기간</span>
+              <span class="label-tip">✽ 불필요한 경우 공란</span>
+            </div>
+            <input type="text" id="topDate" value="2026.04.01 - 2026.04.30" placeholder="이벤트 기간 입력">
+          </div>
+        </div>
 
-          <div class="form-group">
-            <span class="label">이벤트 기간 <span class="tip">※ 불필요한 경우 공란</span></span>
-            <input type="text" id="topDate" value="2026.04.01 - 2026.04.30">
+        <div class="form-row-group">
+          <div class="form-group-item">
+            <div class="label-with-tip">
+              <span class="label-text">하단 문구</span>
+            </div>
+            <input type="text" id="botText" value="부가세별도" placeholder="하단 문구 입력">
+          </div>
+          <div class="form-group-item">
+            <div class="label-with-tip">
+              <span class="label-text">🎨 테마 색상</span>
+              <span class="label-tip">✽ 강조색 일괄 변경</span>
+            </div>
+            <div class="color-group"
+              style="background: white; border: 1px solid #e5e7eb; border-radius: var(--radius-md); padding: 5px 12px; height: 48px; display: flex; align-items: center;">
+              <div class="color-swatch-wrapper" style="width: 28px; height: 28px;">
+                <button id="themeSwatch" class="color-swatch" style="background-color: #0064FF;"></button>
+                <input type="color" id="themeColor" class="color-picker-hidden" value="#0064FF">
+              </div>
+              <input type="text" id="themeHex" class="input-hex" value="#0064FF"
+                style="border: none !important; box-shadow: none !important; height: auto !important; padding: 0 !important; font-size: 15px !important; flex: 1; text-align: left !important; margin-left: 10px; color: var(--text-main); font-weight: 700;">
+            </div>
           </div>
         </div>
       </div>
 
       <div class="form-section">
-        <span class="label">항목 데이터 <span class="tip">※ &lt; &gt; 안에 텍스트를 넣으면 강조됩니다</span></span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span class="label" style="margin-bottom: 0;">항목 데이터</span>
+        </div>
 
         <div id="bannerTabs"></div>
 
@@ -52,23 +83,18 @@
             </svg>
             항목 추가
           </button>
-          <button class="btn-add btn-add-page" onclick="addSectionTitle()" title="항목 없이 배너 제목 행만 추가합니다">
+          <button class="btn-add btn-add-page" onclick="addSectionTitle('', true)" title="새 페이지(섹션)와 기본 항목을 추가합니다">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
               <polyline points="14 2 14 8 20 8" />
             </svg>
-            배너 제목만 추가
+            + 페이지 추가
           </button>
         </div>
       </div>
 
       <div class="form-section">
-        <div class="form-group">
-          <span class="label">하단 문구 <span class="tip">※ 외국어 제작 시 각 언어로 수정</span></span>
-          <input type="text" id="botText" value="부가세별도">
-        </div>
-
         <div class="file-input-wrapper" id="dropZone">
           <label class="file-label" id="fileLabel">배경 이미지 파일 선택 또는 드래그</label>
           <input type="file" id="bgInput" accept="image/*">
@@ -100,7 +126,7 @@
       </div>
 
       <div class="project-actions">
-        <button class="btn-project" onclick="saveProject()">
+        <button class="btn-project" id="saveProjectBtn" onclick="saveProject()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
             style="margin-right:6px; vertical-align:middle;">
@@ -139,6 +165,7 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
   <script src="./이벤트.js"></script>
 </body>
 
