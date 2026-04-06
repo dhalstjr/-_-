@@ -2,6 +2,9 @@ let generatedImagesUrls = [];
     let cachedBgImg = null;
     let isBackedUp = true; // 최초 실행 시는 구실 데이터를 수정하지 않았으리건데, 실제 항목 입력 후 false가 됨
 
+    document.addEventListener('DOMContentLoaded', () => {
+    });
+
     function markUnsaved() {
       if (isBackedUp) {
         isBackedUp = false;
@@ -33,17 +36,41 @@ let generatedImagesUrls = [];
       const items = [];
       const container = document.getElementById('itemsContainer');
       Array.from(container.children).forEach(child => {
-        if (child.classList.contains('item-row')) {
+        if (child.dataset.type === 'table-block') {
+          const boxes = [];
+          child.querySelectorAll('.table-box').forEach(box => {
+            boxes.push({
+              content: box.querySelector('.box-content').value,
+              price: box.querySelector('.box-price').value
+            });
+          });
+          items.push({ type: 'table-block', boxes });
+        } else if (child.classList.contains('item-row')) {
+          const rows = [];
+          child.querySelectorAll('.price-option-row').forEach(r => {
+             rows.push({
+                unit: r.querySelector('.item-unit').value,
+                price: r.querySelector('.item-price').value
+             });
+          });
           items.push({
             type: 'item',
-            itemName: child.querySelector('.item-name').value,
-            unit: child.querySelector('.item-unit').value,
-            price: child.querySelector('.item-price').value
+            itemName: child.querySelector('.item-name')?.value || "",
+            nameSize: child.querySelector('.name-size')?.value || 27,
+            nameWeight: child.querySelector('.name-weight')?.value || 700,
+            rows: rows,
+            unitSize: child.querySelector('.unit-size')?.value || 27,
+            unitWeight: child.querySelector('.unit-weight')?.value || 800,
+            priceSize: child.querySelector('.price-size')?.value || 34,
+            priceWeight: child.querySelector('.price-weight')?.value || 700,
+            layoutType: child.querySelector('.layout-type')?.value || 'standard'
           });
         } else if (child.classList.contains('section-title-wrapper')) {
           items.push({
             type: 'sectionTitle',
-            value: child.querySelector('.section-title-input').value
+            value: child.querySelector('.section-title-input').value,
+            titleSize: child.querySelector('.title-size').value,
+            titleWeight: child.querySelector('.title-weight').value
           });
         }
       });
@@ -91,10 +118,16 @@ let generatedImagesUrls = [];
             const container = document.getElementById('itemsContainer');
             container.innerHTML = '';
             data.items.forEach(item => {
-              if (item.type === 'item') {
-                addItemRow(item.itemName, item.unit, item.price);
+              if (item.type === 'table-block' || item.type === 'table-group') {
+                addTableGroup(item.boxes);
+              } else if (item.type === 'item') {
+                let rows = item.rows;
+                if (!rows) {
+                  rows = [{unit: item.unit || "", price: item.price || ""}];
+                }
+                addItemRow(item.itemName, rows, item.nameSize, item.nameWeight, item.unitSize, item.unitWeight, item.priceSize, item.priceWeight, item.layoutType || 'standard');
               } else if (item.type === 'sectionTitle') {
-                addSectionTitle(item.value);
+                addSectionTitle(item.value, false, item.titleSize, item.titleWeight);
               }
             });
             renderTabs();
@@ -148,6 +181,7 @@ let generatedImagesUrls = [];
     function renderTabs() {
       const tabsEl = document.getElementById('bannerTabs');
       if (!tabsEl) return;
+      tabsEl._tabDragInitialized = false;
       const groups = getBannerGroups();
       tabsEl.innerHTML = '';
 
@@ -193,6 +227,7 @@ let generatedImagesUrls = [];
       const g = groups[activeBannerIndex];
       if (g) {
         g.titleEl.classList.add('active-banner');
+        g.titleEl.dataset.pageLabel = `PAGE ${activeBannerIndex + 1}`;
         g.titleEl.style.display = '';
         g.itemEls.forEach(el => { el.style.display = ''; });
       }
@@ -214,9 +249,8 @@ let generatedImagesUrls = [];
         tabStartX = e.clientX;
         tabScrollLeft = el.scrollLeft;
         tabHasDragged = false;
-        el.setPointerCapture(e.pointerId);
       });
-      el.addEventListener('pointermove', (e) => {
+      window.addEventListener('pointermove', (e) => {
         if (!tabDragDown) return;
         const walk = (e.clientX - tabStartX) * 1.5;
         if (Math.abs(walk) > 4) {
@@ -225,15 +259,13 @@ let generatedImagesUrls = [];
         }
         el.scrollLeft = tabScrollLeft - walk;
       });
-      el.addEventListener('pointerup', (e) => {
+      window.addEventListener('pointerup', () => {
         tabDragDown = false;
         el.classList.remove('is-dragging');
-        el.releasePointerCapture(e.pointerId);
       });
-      el.addEventListener('pointercancel', (e) => {
+      window.addEventListener('pointercancel', () => {
         tabDragDown = false;
         el.classList.remove('is-dragging');
-        el.releasePointerCapture(e.pointerId);
       });
     }
 
@@ -303,15 +335,33 @@ let generatedImagesUrls = [];
       debouncedGenerateImages();
     }
 
-    function addSectionTitle(titleValue = "", withTemplate = false) {
+    function addSectionTitle(titleValue = "", withTemplate = false, titleSize = 49, titleWeight = 800) {
       const container = document.getElementById('itemsContainer');
       const wrapper = document.createElement('div');
       wrapper.className = 'section-title-wrapper';
       wrapper.innerHTML = `
                 <div class="drag-handle">${DRAG_HANDLE_SVG}</div>
-                <label style="font-size: 16px; color: var(--text-main); font-weight: 800;">제목</label>
                 <textarea class="btn-input section-title-input" placeholder="중앙 배너 제목 입력 (예: 보톡스 이벤트)">${titleValue}</textarea>
-                <button class="btn-remove" onclick="deleteSectionTitle(this)" title="삭제">${CLOSE_SVG_16}</button>
+                <div class="section-row-actions">
+                  <button class="btn-settings" onclick="this.closest('.section-title-wrapper').querySelector('.font-settings-panel').style.display = this.closest('.section-title-wrapper').querySelector('.font-settings-panel').style.display === 'flex' ? 'none' : 'flex'; this.classList.toggle('settings-open');" title="폰트 설정">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <button class="btn-remove" onclick="deleteSectionTitle(this)" title="삭제">${CLOSE_SVG_16}</button>
+                </div>
+                <div class="font-settings-panel">
+                  <div class="setting-group">
+                    <span class="setting-group-title">제목</span>
+                    <span class="fc-label">Size</span>
+                    <input type="number" class="btn-input fc-size title-size" value="${titleSize}" min="10" max="150" step="1">
+                    <span class="fc-label">Weight</span>
+                    <select class="btn-input fc-weight title-weight">
+                      <option value="400" ${titleWeight == 400 ? 'selected' : ''}>Regular</option>
+                      <option value="500" ${titleWeight == 500 ? 'selected' : ''}>Medium</option>
+                      <option value="700" ${titleWeight == 700 ? 'selected' : ''}>Bold</option>
+                      <option value="800" ${titleWeight == 800 ? 'selected' : ''}>ExtraBold</option>
+                    </select>
+                  </div>
+                </div>
             `;
       container.appendChild(wrapper);
       // DOM 삽입 직후 초기 높이 설정
@@ -321,92 +371,267 @@ let generatedImagesUrls = [];
 
       // 탭 실시간 동기화
       stInput.addEventListener('input', () => renderTabs());
-      // 실시간 갱신 리스너 추가
-      stInput.addEventListener('input', debouncedGenerateImages);
+      // 실시간 갱신 리스너 추가 (input + select 모두)
+      wrapper.querySelectorAll('input, textarea, select').forEach(el => {
+        el.addEventListener('input', debouncedGenerateImages);
+        el.addEventListener('change', debouncedGenerateImages);
+      });
 
       renderTabs();
       switchTab(getBannerGroups().length - 1);
-
+      
+      const tabsEl = document.getElementById('bannerTabs');
+      if (tabsEl) {
+        setTimeout(() => {
+          tabsEl.scrollTo({ left: tabsEl.scrollWidth, behavior: 'smooth' });
+        }, 50);
+      }
       if (withTemplate) {
-        addItemRow(`<붓기삭제 종아리 슬림패키지>\n종아리 보톡스 200u + 슬림주사 100cc\n+지방타파레이저 1000샷`, '', '19만9천');
-        addItemRow('보톡스', '', '9만');
-        addItemRow('필러', '1회', '4만');
-        addItemRow('필러', '3회', '11만');
+        addItemRow(`<붓기삭제 종아리 슬림패키지>\n종아리 보톡스 200u + 슬림주사 100cc\n+지방타파레이저 1000샷`, [{unit: '', price: '19만9천'}]);
+        addItemRow('보톡스', [{unit: '', price: '9만'}]);
+        addItemRow('필러', [
+          {unit: '1회', price: '4만'},
+          {unit: '3회', price: '11만'}
+        ]);
       } else {
         debouncedGenerateImages();
       }
     }
 
-    function createItemRow(itemName = "", unit = "", price = "") {
+    function addItemRow(itemName = "", rows = [{unit: "", price: ""}], nSize = 27, nWeight = 700, uSize = 27, uWeight = 800, pSize = 34, pWeight = 700, layoutType = 'standard') {
+      const container = document.getElementById('itemsContainer');
+      const row = createItemRow(itemName, rows, nSize, nWeight, uSize, uWeight, pSize, pWeight, layoutType);
+      
+      let lastRow = null;
+      Array.from(container.children).forEach(child => {
+        if (child.classList.contains('item-row') || child.classList.contains('section-title-wrapper') || child.dataset.type === 'table-block') {
+          lastRow = child;
+        }
+      });
+      
+      if (lastRow) {
+        lastRow.parentNode.insertBefore(row, lastRow.nextSibling);
+      } else {
+        container.appendChild(row);
+      }
+      
+      switchTab(getBannerGroups().length - 1);
+      
+      const tabsEl = document.getElementById('bannerTabs');
+      if (tabsEl) {
+        setTimeout(() => {
+          tabsEl.scrollTo({ left: tabsEl.scrollWidth, behavior: 'smooth' });
+        }, 50);
+      }
+
+      debouncedGenerateImages();
+    }
+
+    window.addPriceOption = function(btn) {
+      const wrapper = btn.closest('.price-options-wrapper');
+      const optionRow = document.createElement('div');
+      optionRow.className = 'price-option-row';
+      optionRow.style.cssText = 'display:flex; gap:8px; align-items:center;';
+      optionRow.innerHTML = `
+        <input type="text" class="btn-input item-unit" placeholder="단위">
+        <input type="text" class="btn-input item-price" placeholder="금액">
+        <button class="btn-remove btn-remove-price-option" onclick="this.closest('.price-option-row').remove(); debouncedGenerateImages();" style="width:24px; height:24px;">${CLOSE_SVG_14}</button>
+      `;
+      optionRow.querySelectorAll('input').forEach(el => el.addEventListener('input', debouncedGenerateImages));
+      wrapper.insertBefore(optionRow, btn);
+      debouncedGenerateImages();
+    };
+
+    function createItemRow(itemName = "", rows = [{unit: "", price: ""}], nSize = 27, nWeight = 700, uSize = 27, uWeight = 800, pSize = 34, pWeight = 700, layoutType = 'standard') {
       const row = document.createElement('div');
       row.className = 'item-row';
+      
+      let priceHtml = '';
+      rows.forEach((r, i) => {
+        priceHtml += `<div class="price-option-row" style="display:flex; gap:8px; align-items:center;">
+          <input type="text" class="btn-input item-unit" placeholder="단위" value="${r.unit || ''}">
+          <input type="text" class="btn-input item-price" placeholder="금액" value="${r.price || ''}">
+          ${i > 0 ? `<button class="btn-remove btn-remove-price-option" onclick="this.closest('.price-option-row').remove(); debouncedGenerateImages();" style="width:24px; height:24px;">${CLOSE_SVG_14}</button>` : `<div style="width:24px;"></div>`}
+        </div>`;
+      });
+
       row.innerHTML = `
                 <div class="drag-handle">${DRAG_HANDLE_SVG}</div>
                 <textarea class="btn-input item-name" placeholder="항목명 (예: <리쥬란 2cc>)">${itemName}</textarea>
-                <input type="text" class="btn-input btn-input-unit item-unit" placeholder="단위" value="${unit}">
-                <input type="text" class="btn-input btn-input-price item-price" placeholder="금액" value="${price}">
+                <div class="price-options-wrapper" style="display:flex; flex-direction:column; gap:8px;">
+                  ${priceHtml}
+                  <button class="btn-add btn-add-price-option" onclick="addPriceOption(this)" style="padding:6px; font-size:12px; height:auto; background:#f2f4f6; color:#4e5968;">+ 가격 추가</button>
+                </div>
                 <div class="row-actions">
+                    <button class="btn-settings" onclick="this.closest('.item-row').querySelector('.font-settings-panel').style.display = this.closest('.item-row').querySelector('.font-settings-panel').style.display === 'flex' ? 'none' : 'flex'; this.classList.toggle('settings-open');" title="폰트 설정">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1-1-1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
                     <button class="btn-copy" onclick="duplicateItemRow(this)" title="복제">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                     </button>
-                    <button class="btn-remove" onclick="this.parentElement.parentElement.remove(); debouncedGenerateImages();" title="삭제">${CLOSE_SVG_14}</button>
+                    <button class="btn-remove" onclick="this.closest('.item-row').remove(); debouncedGenerateImages();" title="삭제">${CLOSE_SVG_14}</button>
+                </div>
+                <div class="font-settings-panel">
+                  <div class="setting-group">
+                    <span class="setting-group-title">정렬</span>
+                    <select class="btn-input fc-weight layout-type">
+                      <option value="standard" ${layoutType === 'standard' ? 'selected' : ''}>↔ 좌우 배치</option>
+                      <option value="center" ${layoutType === 'center' ? 'selected' : ''}>↕ 상하 중앙</option>
+                    </select>
+                  </div>
+                  <div class="setting-group">
+                    <span class="setting-group-title">항목명</span>
+                    <span class="fc-label">Size</span>
+                    <input type="number" class="btn-input fc-size name-size" value="${nSize}">
+                    <span class="fc-label">Weight</span>
+                    <select class="btn-input fc-weight name-weight">
+                      <option value="400" ${nWeight == 400 ? 'selected' : ''}>Regular</option>
+                      <option value="500" ${nWeight == 500 ? 'selected' : ''}>Medium</option>
+                      <option value="700" ${nWeight == 700 ? 'selected' : ''}>Bold</option>
+                      <option value="800" ${nWeight == 800 ? 'selected' : ''}>ExtraBold</option>
+                    </select>
+                  </div>
+                  <div class="setting-group">
+                    <span class="setting-group-title">단위</span>
+                    <span class="fc-label">Size</span>
+                    <input type="number" class="btn-input fc-size unit-size" value="${uSize}">
+                    <span class="fc-label">Weight</span>
+                    <select class="btn-input fc-weight unit-weight">
+                      <option value="400" ${uWeight == 400 ? 'selected' : ''}>Regular</option>
+                      <option value="500" ${uWeight == 500 ? 'selected' : ''}>Medium</option>
+                      <option value="700" ${uWeight == 700 ? 'selected' : ''}>Bold</option>
+                      <option value="800" ${uWeight == 800 ? 'selected' : ''}>ExtraBold</option>
+                    </select>
+                  </div>
+                  <div class="setting-group">
+                    <span class="setting-group-title">가격</span>
+                    <span class="fc-label">Size</span>
+                    <input type="number" class="btn-input fc-size price-size" value="${pSize}">
+                    <span class="fc-label">Weight</span>
+                    <select class="btn-input fc-weight price-weight">
+                      <option value="400" ${pWeight == 400 ? 'selected' : ''}>Regular</option>
+                      <option value="500" ${pWeight == 500 ? 'selected' : ''}>Medium</option>
+                      <option value="700" ${pWeight == 700 ? 'selected' : ''}>Bold</option>
+                      <option value="800" ${pWeight == 800 ? 'selected' : ''}>ExtraBold</option>
+                    </select>
+                  </div>
                 </div>
             `;
 
-      // 실시간 갱신 리스너 추가
-      row.querySelectorAll('input, textarea').forEach(input => {
-        input.addEventListener('input', debouncedGenerateImages);
+      row.querySelectorAll('input, textarea, select').forEach(el => {
+        el.addEventListener('input', debouncedGenerateImages);
+        el.addEventListener('change', debouncedGenerateImages);
       });
 
       return row;
     }
 
-    function addItemRow(itemName = "", unit = "", price = "") {
+    function createTableBox(content = "", price = "") {
+      const box = document.createElement('div');
+      box.className = 'table-box';
+      box.innerHTML = `
+        <textarea class="btn-input box-content" placeholder="좌측 항목 내용 (예: 레이저 2종 \n 보톡스)">${content}</textarea>
+        <input type="text" class="btn-input box-price" placeholder="가격 (예: 100,000원)" value="${price}">
+        <button type="button" class="btn-remove-table-box" style="color: var(--text-tertiary); background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px;">✕</button>
+      `;
+      box.querySelectorAll('input, textarea').forEach(el => {
+        el.addEventListener('input', debouncedGenerateImages);
+      });
+      box.querySelector('.btn-remove-table-box').addEventListener('click', () => {
+        box.remove();
+        debouncedGenerateImages();
+      });
+      return box;
+    }
+
+    function addTableGroup(boxesData = null) {
+      const activeBanner = document.querySelector('.section-title-wrapper.active-banner');
+      if (!activeBanner && !document.querySelector('.section-title-wrapper')) {
+        addSectionTitle("새 페이지");
+      }
+
       const container = document.getElementById('itemsContainer');
-      const row = createItemRow(itemName, unit, price);
-      const groups = getBannerGroups();
-      const activeGroup = groups[activeBannerIndex];
-      if (activeGroup) {
-        // 활성 배너의 마지막 item-row 뒤에 삽입
-        const lastItem = activeGroup.itemEls[activeGroup.itemEls.length - 1];
-        if (lastItem) {
-          lastItem.after(row);
-        } else {
-          activeGroup.titleEl.after(row);
+      const targetBanner = document.querySelector('.section-title-wrapper.active-banner') || document.querySelector('.section-title-wrapper');
+      
+      const row = document.createElement('div');
+      row.className = 'item-row table-type';
+      row.dataset.type = 'table-block';
+      row.innerHTML = `
+        <div class="drag-handle">${DRAG_HANDLE_SVG}</div>
+        <div class="table-boxes-wrapper"></div>
+        <div class="row-actions">
+           <button class="btn-remove" onclick="this.closest('.item-row').remove(); debouncedGenerateImages();" title="삭제">${CLOSE_SVG_14}</button>
+        </div>
+      `;
+      
+      const wrapper = row.querySelector('.table-boxes-wrapper');
+      
+      if (boxesData && Array.isArray(boxesData)) {
+        boxesData.forEach(d => wrapper.appendChild(createTableBox(d.content, d.price)));
+      } else {
+        wrapper.appendChild(createTableBox('', ''));
+      }
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn-add-table-box';
+      addBtn.textContent = '+ 박스 추가';
+      addBtn.onclick = () => {
+        wrapper.insertBefore(createTableBox('', ''), addBtn);
+        debouncedGenerateImages();
+      };
+      wrapper.appendChild(addBtn);
+
+      if (targetBanner) {
+        let nextSibling = targetBanner.nextElementSibling;
+        while (nextSibling && !nextSibling.classList.contains('section-title-wrapper')) {
+          nextSibling = nextSibling.nextElementSibling;
         }
+        if (nextSibling) container.insertBefore(row, nextSibling);
+        else container.appendChild(row);
       } else {
         container.appendChild(row);
       }
-      // DOM 삽입 직후 초기 높이 설정
-      const nameEl = row.querySelector('.item-name');
-      nameEl.style.height = 'auto';
-      nameEl.style.height = nameEl.scrollHeight + 'px';
-      switchTab(activeBannerIndex);
       debouncedGenerateImages();
     }
 
-    function duplicateItemRow(btn) {
-      const currentRow = btn.closest('.item-row');
-      const itemName = currentRow.querySelector('.item-name').value;
-      const unit = currentRow.querySelector('.item-unit').value;
-      const price = currentRow.querySelector('.item-price').value;
+    function duplicateItemRow(button) {
+      const currentRow = button.closest('.item-row');
+      const itemName = currentRow.querySelector('.item-name')?.value || "";
+      const rowsData = [];
+      currentRow.querySelectorAll('.price-option-row').forEach(r => {
+        rowsData.push({
+          unit: r.querySelector('.item-unit').value,
+          price: r.querySelector('.item-price').value
+        });
+      });
+      if(rowsData.length === 0) rowsData.push({unit: "", price: ""});
+      
+      const nSize = currentRow.querySelector('.name-size')?.value || 27;
+      const nWeight = currentRow.querySelector('.name-weight')?.value || 700;
+      const uSize = currentRow.querySelector('.unit-size')?.value || 27;
+      const uWeight = currentRow.querySelector('.unit-weight')?.value || 800;
+      const pSize = currentRow.querySelector('.price-size')?.value || 34;
+      const pWeight = currentRow.querySelector('.price-weight')?.value || 700;
+      const layoutType = currentRow.querySelector('.layout-type')?.value || 'standard';
 
-      const newRow = createItemRow(itemName, unit, price);
+      const newRow = createItemRow(itemName, rowsData, nSize, nWeight, uSize, uWeight, pSize, pWeight, layoutType);
       currentRow.after(newRow);
-      // DOM 삽입 직후 초기 높이 설정
       const nameEl = newRow.querySelector('.item-name');
-      nameEl.style.height = 'auto';
-      nameEl.style.height = nameEl.scrollHeight + 'px';
+      if (nameEl) {
+          nameEl.style.height = 'auto';
+          nameEl.style.height = nameEl.scrollHeight + 'px';
+      }
       debouncedGenerateImages();
     }
-
 
 
     const CONFIG = {
       width: 1000,
       height: 1000,
       fonts: {
-        main: "'Pretendard', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif"
+        main: "'Pretendard', sans-serif",
+        title: "'GmarketSansBold', sans-serif",
+        sub: "'GmarketSansMedium', sans-serif"
       }
     };
 
@@ -466,6 +691,34 @@ let generatedImagesUrls = [];
       reader.readAsDataURL(file);
     });
 
+    function convertToGroups(items) {
+      const groups = [];
+      let currentGroup = null;
+
+      items.forEach(item => {
+        if (item.type === 'table-block') {
+          groups.push(item);
+          currentGroup = null;
+        } else {
+          // Standard item
+          if (currentGroup && currentGroup.type !== 'table-block' && currentGroup.item === item.item && currentGroup.layoutType === item.layoutType) {
+            currentGroup.rows.push(...item.rows);
+          } else {
+            currentGroup = {
+              type: 'item-group',
+              item: item.item,
+              layoutType: item.layoutType,
+              nameSize: item.nameSize,
+              nameWeight: item.nameWeight,
+              rows: [...item.rows]
+            };
+            groups.push(currentGroup);
+          }
+        }
+      });
+      return groups;
+    }
+
     async function generateImages() {
       if (!cachedBgImg) {
         return;
@@ -473,27 +726,60 @@ let generatedImagesUrls = [];
 
       const container = document.getElementById('itemsContainer');
       const pages = [];
-      let currentPage = { items: [], title: "" };
+      let currentPage = { items: [], title: "", titleSize: 49, titleWeight: 800 };
 
       container.childNodes.forEach(child => {
         if (child.nodeType !== 1) return;
 
         if (child.classList.contains('section-title-wrapper')) {
           if (currentPage.items.length > 0) {
+            currentPage.items = convertToGroups(currentPage.items);
             pages.push(currentPage);
-            currentPage = { items: [], title: "" };
+            currentPage = { items: [], title: "", titleSize: 49, titleWeight: 800 };
           }
           currentPage.title = child.querySelector('.section-title-input').value.trim();
+          currentPage.titleSize = parseInt(child.querySelector('.title-size')?.value) || 49;
+          currentPage.titleWeight = parseInt(child.querySelector('.title-weight')?.value) || 800;
+        } else if (child.dataset.type === 'table-block') {
+          const boxes = [];
+          child.querySelectorAll('.table-box').forEach(box => {
+            const content = box.querySelector('.box-content').value.trim();
+            const price = box.querySelector('.box-price').value.trim();
+            if (content || price) boxes.push({ content, price });
+          });
+          if (boxes.length > 0) currentPage.items.push({ type: 'table-block', boxes });
         } else if (child.classList.contains('item-row')) {
-          const itemName = child.querySelector('.item-name').value.trim();
-          const unit = child.querySelector('.item-unit').value.trim();
-          const price = child.querySelector('.item-price').value.trim();
-          if (itemName || unit || price) {
-            currentPage.items.push({ itemName, unit, price });
+          const itemName = child.querySelector('.item-name')?.value.trim() || "";
+          const rows = [];
+          
+          child.querySelectorAll('.price-option-row').forEach(r => {
+             const unit = r.querySelector('.item-unit').value.trim();
+             const price = r.querySelector('.item-price').value.trim();
+             if (unit || price || itemName) {
+                 rows.push({
+                     unit, price,
+                     unitSize: parseInt(child.querySelector('.unit-size')?.value) || 27,
+                     unitWeight: parseInt(child.querySelector('.unit-weight')?.value) || 800,
+                     priceSize: parseInt(child.querySelector('.price-size')?.value) || 34,
+                     priceWeight: parseInt(child.querySelector('.price-weight')?.value) || 700
+                 });
+             }
+          });
+          
+          if (rows.length > 0) {
+             currentPage.items.push({
+               type: 'standard',
+               item: itemName,
+               rows: rows,
+               nameSize: parseInt(child.querySelector('.name-size')?.value) || 27,
+               nameWeight: parseInt(child.querySelector('.name-weight')?.value) || 700,
+               layoutType: child.querySelector('.layout-type')?.value || 'standard'
+             });
           }
         }
       });
       if (currentPage.items.length > 0) {
+        currentPage.items = convertToGroups(currentPage.items);
         pages.push(currentPage);
       }
 
@@ -508,10 +794,7 @@ let generatedImagesUrls = [];
         '49px "GmarketSansBold"',
         '27px "Pretendard"',
         '700 36px "Pretendard"',
-        '800 54px "Pretendard"',
-        '27px "Noto Sans JP"',
-        '27px "Noto Sans SC"',
-        '27px "Noto Sans Thai"'
+        '800 54px "Pretendard"'
       ];
 
       try {
@@ -528,10 +811,10 @@ let generatedImagesUrls = [];
       const botText = document.getElementById('botText').value.trim();
 
       pages.forEach((page, index) => {
-        const groups = convertToGroups(page.items);
+        const groups = page.items;
         if (groups.length > 0) {
           const title = page.title || "";
-          const dataUrl = drawSingleCanvas(cachedBgImg, groups, title, botText);
+          const dataUrl = drawSingleCanvas(cachedBgImg, groups, title, botText, page.titleSize, page.titleWeight);
           generatedImagesUrls.push(dataUrl);
 
           const imgEl = document.createElement('img');
@@ -550,20 +833,6 @@ let generatedImagesUrls = [];
         }
       });
       document.getElementById('downloadBtn').style.display = 'block';
-    }
-
-    function convertToGroups(items) {
-      const groups = [];
-      let currentGroup = null;
-
-      items.forEach(it => {
-        if (!currentGroup || currentGroup.item !== it.itemName) {
-          currentGroup = { item: it.itemName, rows: [] };
-          groups.push(currentGroup);
-        }
-        currentGroup.rows.push({ unit: it.unit, price: it.price });
-      });
-      return groups;
     }
 
     function downloadAllImages() {
@@ -605,20 +874,23 @@ let generatedImagesUrls = [];
       return numStr;
     }
 
-    // 가격 문자열을 숫자/텍스트 토큰으로 파싱하여 메타 정보 반환
-    function getPriceTokenMeta(ctx, priceStr) {
+    function getPriceTokenMeta(ctx, priceStr, pSize = 34, pWeight = 700) {
       const tokens = priceStr.match(/[\d.,]+|[^\d.,]+/g) || [];
       let totalWidth = 0;
+      const numDisplaySize = Math.round(pSize * 1.5); // 숫자는 1.5배 크게
+
       const tokenMeta = tokens.map(token => {
         const isNumber = /^[\d.,]+$/.test(token);
         const text = isNumber ? formatPrice(token) : token;
-        const font = isNumber ? `800 54px ${CONFIG.fonts.main}` : `700 34px ${CONFIG.fonts.main}`;
+        const font = isNumber 
+          ? `${pWeight} ${numDisplaySize}px ${CONFIG.fonts.main}` 
+          : `${pWeight} ${pSize}px ${CONFIG.fonts.main}`;
         const color = isNumber ? null : 'black'; // null = themeColor
-        const letterSpacing = isNumber ? "-3px" : "-1px";
+        const letterSpacing = isNumber ? "-2px" : "-1px";
         ctx.font = font;
         ctx.letterSpacing = letterSpacing;
         let width = ctx.measureText(text).width;
-        if (isNumber) width += 3;
+        if (isNumber) width += 2;
         totalWidth += width;
         return { text, font, color, letterSpacing, width, isNumber };
       });
@@ -665,7 +937,7 @@ let generatedImagesUrls = [];
       ctx.closePath(); ctx.fill();
     }
 
-    function drawSingleCanvas(bgImg, groups, title, botText) {
+    function drawSingleCanvas(bgImg, groups, title, botText, titleSize = 49, titleWeight = 800) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       canvas.width = CONFIG.width;
@@ -674,54 +946,94 @@ let generatedImagesUrls = [];
       const startX = 105, endX = 895;
       const unitPriceGap = 25;
       const groupRowGap = 50;
-      const textLineGap = 40;
       const whitePadding = 15;
       const itemHalfHeight = 24;
 
       let totalListHeight = 0;
-      ctx.font = `700 27px ${CONFIG.fonts.main}`;
+      ctx.font = `700 22px ${CONFIG.fonts.main}`;
       ctx.letterSpacing = "-1px";
 
       groups.forEach((group, index) => {
+        if (group.type === 'table-block') {
+          let groupSpans = 0;
+          group.boxLayouts = [];
+          group.boxes.forEach(box => {
+            const lines = box.content.split('\n');
+            const textH = lines.length * 30; // 22px font size handling
+            const boxH = Math.max(textH + 40, 80);
+            group.boxLayouts.push({ lines, boxH });
+            groupSpans += boxH + 12; // 12px gap
+          });
+          group.heightSpan = groupSpans - 12; 
+          totalListHeight += group.heightSpan;
+          if (index < groups.length - 1) {
+              totalListHeight += 50;
+          }
+          return;
+        }
+
+        const gSize = group.nameSize || 22;
+        const gWeight = group.nameWeight || 500;
+        const textLineGap = Math.round(gSize * 1.4);
+
+        if (!group.rows) group.rows = [];
+
         group.localMaxPriceWidth = 0;
         group.rows.forEach(r => {
-          const { totalWidth } = getPriceTokenMeta(ctx, r.price);
+          const { totalWidth } = getPriceTokenMeta(ctx, r.price, r.priceSize || 34, r.priceWeight || 700);
           if (totalWidth > group.localMaxPriceWidth) group.localMaxPriceWidth = totalWidth;
         });
 
         group.maxUnitW = 0;
-        ctx.font = `800 27px ${CONFIG.fonts.main}`;
+        let priceSpan = 0;
+
         group.rows.forEach(r => {
           if (r.unit) {
-            const w = ctx.measureText(r.unit).width + 30;
+            ctx.font = `${r.unitWeight || 500} ${r.unitSize || 18}px ${CONFIG.fonts.main}`;
+            const w = ctx.measureText(r.unit).width + Math.round((r.unitSize || 18) * 1.2);
             if (w > group.maxUnitW) group.maxUnitW = w;
           }
+          
+          r.rowHeight = Math.round((r.priceSize || 34) * 1.6);
+          priceSpan += r.rowHeight;
         });
 
-        const groupUnitRightBoundary = endX - group.localMaxPriceWidth - unitPriceGap;
-        let currentMaxTextWidth;
-        if (group.maxUnitW > 0) {
-          currentMaxTextWidth = (groupUnitRightBoundary - group.maxUnitW) - startX - 15;
+        // 우측 요소(단위박스 + 가격) 전체 너비를 합산하여 텍스트 허용 너비 계산
+        // 1. 레이아웃에 따른 텍스트 제한 너비(MaxWidth) 및 높이(HeightSpan) 계산
+        ctx.font = `${gWeight} ${gSize}px ${CONFIG.fonts.main}`;
+        ctx.letterSpacing = "-1px";
+
+        if (group.layoutType === 'center') {
+          // Center: 전체 너비 사용 (800px)
+          const centerMaxWidth = endX - startX;
+          group.lines = wrapTextChar(ctx, group.item, centerMaxWidth);
+          const textSpan = group.lines.length * textLineGap;
+          group.heightSpan = textSpan + 24 + priceSpan;
         } else {
-          currentMaxTextWidth = groupUnitRightBoundary - startX - 5;
+          // Standard: 우측 버튼 영역과 겹치지 않도록 철저히 계산
+          const rightBlockWidth = group.localMaxPriceWidth + (group.maxUnitW > 0 ? group.maxUnitW + unitPriceGap : 0);
+          const currentMaxTextWidth = Math.max(60, (endX - startX) - rightBlockWidth - 30); // 30px 안전 마진 확보
+          group.lines = wrapTextChar(ctx, group.item, currentMaxTextWidth);
+          const textSpan = group.lines.length * textLineGap;
+          group.heightSpan = Math.max(priceSpan, textSpan);
         }
 
-        group.lines = wrapTextChar(ctx, group.item, currentMaxTextWidth);
-
-        let priceSpan = (group.rows.length - 1) * groupRowGap;
-        let textSpan = (group.lines.length - 1) * textLineGap;
-        group.heightSpan = Math.max(priceSpan, textSpan);
         totalListHeight += group.heightSpan;
-        if (index < groups.length - 1) totalListHeight += 65;
+        if (index < groups.length - 1) {
+            totalListHeight += Math.max(50, Math.round(gSize * 1.8));
+        }
       });
 
-      ctx.font = `49px 'GmarketSansBold', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif`;
+      // whiteBoxHeight = 동적 마진 + 총 리스트 높이 + 동적 마진
+      const dynamicWhitePadding = 30; // 기준 패딩
+      const whiteBoxHeight = dynamicWhitePadding + totalListHeight + dynamicWhitePadding;
+      
+      ctx.font = `${titleWeight} ${titleSize}px ${CONFIG.fonts.title}`;
       ctx.letterSpacing = "-2px";
       const titleLines = wrapTextChar(ctx, title, 800);
-      const titleLineHeight = 58;
+      const titleLineHeight = Math.round(titleSize * 1.4);
       const bannerHeight = Math.max(95, titleLines.length * titleLineHeight + 30);
 
-      const whiteBoxHeight = whitePadding + itemHalfHeight + totalListHeight + itemHalfHeight + whitePadding;
       const totalEventBoxHeight = bannerHeight + whiteBoxHeight;
       const eventBoxStartY = 500 - (totalEventBoxHeight / 2);
 
@@ -739,17 +1051,16 @@ let generatedImagesUrls = [];
 
       const themeColor = document.getElementById('themeHex').value;
 
-      // 상단 제목 / 이벤트 기간 공통 스타일
       ctx.fillStyle = themeColor;
-      ctx.font = `27px 'GmarketSansMedium', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif`;
+      ctx.font = `27px ${CONFIG.fonts.sub}`;
       ctx.letterSpacing = "-1px";
       ctx.fillText(document.getElementById('topTitle').value, 500, titleBaselineY);
       ctx.fillText(document.getElementById('topDate').value, 500, dateBaselineY);
 
-      ctx.fillStyle = themeColor; // 2. 제목 박스 색상
+      ctx.fillStyle = themeColor; 
       ctx.fillRect(60, eventBoxStartY, 880, bannerHeight);
-      ctx.fillStyle = "white"; // 제목 텍스트 색상 (고정)
-      ctx.font = `49px 'GmarketSansBold', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif`;
+      ctx.fillStyle = "white"; 
+      ctx.font = `${titleWeight} ${titleSize}px ${CONFIG.fonts.title}`;
       ctx.letterSpacing = "-2px";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -762,89 +1073,216 @@ let generatedImagesUrls = [];
       const whiteBoxTop = eventBoxStartY + bannerHeight;
       ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
       ctx.fillRect(60, whiteBoxTop, 880, whiteBoxHeight);
-      ctx.strokeStyle = themeColor; ctx.lineWidth = 2; // 3. 흰박스 라인 색상 (테마 색상 통합)
+      ctx.strokeStyle = themeColor; ctx.lineWidth = 2; 
       ctx.strokeRect(60 + 1, whiteBoxTop, 880 - 2, whiteBoxHeight - 1);
 
-      ctx.textBaseline = "middle";
-      let currentY = whiteBoxTop + whitePadding + itemHalfHeight;
+      let currentY = whiteBoxTop + dynamicWhitePadding;
 
       groups.forEach((group, index) => {
-        const groupCenterY = currentY + group.heightSpan / 2;
-        ctx.font = `700 27px ${CONFIG.fonts.main}`;
-        ctx.letterSpacing = "-1px";
-        ctx.textAlign = "left";
+        if (group.type === 'table-group') {
+          group.boxLayouts.forEach((layout, bIdx) => {
+            const box = group.boxes[bIdx];
+            const boxY = currentY;
+            
+            // 박스 배경 및 테두리
+            ctx.fillStyle = "white";
+            roundRect(ctx, startX, boxY, endX - startX, layout.boxH, 12);
+            ctx.strokeStyle = themeColor;
+            ctx.lineWidth = 2;
+            ctx.stroke();
 
-        let textStartY = groupCenterY - ((group.lines.length - 1) * textLineGap) / 2;
-        let isHighlightText = false;
+            // 좌측 컨텐츠
+            ctx.fillStyle = "black";
+            ctx.font = `22px ${CONFIG.fonts.main}`;
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            const lineGap = 30;
+            const startLineY = boxY + (layout.boxH / 2) - ((layout.lines.length - 1) * lineGap) / 2;
+            layout.lines.forEach((l, i) => {
+               ctx.fillText(l, startX + 24, startLineY + i * lineGap);
+            });
 
-        group.lines.forEach((line, i) => {
-          let currentX = startX;
-          let chunk = "";
+            // 우측 가격
+            ctx.textAlign = "right";
+            ctx.fillStyle = themeColor;
+            const { tokenMeta, totalWidth } = getPriceTokenMeta(ctx, box.price, 34, 700);
+            tokenMeta.forEach(m => { if (m.color === null) m.color = themeColor; });
 
-          for (let j = 0; j < line.length; j++) {
-            const char = line[j];
-            if (char === '<' || char === '>') {
-              if (chunk.length > 0) {
-                ctx.fillStyle = isHighlightText ? themeColor : "black"; // 4. 강조 텍스트 색상 & 항목명 텍스트 색상
-                ctx.fillText(chunk, currentX, textStartY + (i * textLineGap));
-                currentX += ctx.measureText(chunk).width;
-                chunk = "";
-              }
-              isHighlightText = (char === '<');
-            } else {
-              chunk += char;
+            let drawX = endX - 24 - totalWidth;
+            ctx.textAlign = "left";
+            tokenMeta.forEach(meta => {
+              ctx.font = meta.font; ctx.fillStyle = meta.color; ctx.letterSpacing = meta.letterSpacing;
+              ctx.fillText(meta.text, drawX, boxY + (layout.boxH / 2));
+              drawX += meta.width;
+            });
+
+            currentY += layout.boxH + 12; // box gap
+          });
+          currentY -= 12; // 마지막 gap 제거
+          
+          if (index < groups.length - 1) {
+            const groupGap = 50;
+            const lineY = currentY + (groupGap / 2);
+            ctx.beginPath(); ctx.moveTo(startX, lineY); ctx.lineTo(endX, lineY);
+            ctx.strokeStyle = themeColor; ctx.lineWidth = 1; ctx.stroke(); 
+            currentY += groupGap;
+          }
+          return;
+        }
+
+        const gSize = group.nameSize || 27;
+        const gWeight = group.nameWeight || 700;
+        const textLineGap = Math.round(gSize * 1.4);
+        
+        if (group.layoutType === 'center') {
+          // ―――― [CENTER LAYOUT: 상하 중앙 배치] ――――
+          const textSpan = group.lines.length * textLineGap;
+          const textBlockStartY = currentY + textLineGap / 2;
+          let isHighlightText = false;
+
+          // 1. 항목명 중앙 정렬
+          group.lines.forEach((line, i) => {
+            const lineY = textBlockStartY + i * textLineGap;
+            const plainLine = line.replace(/[<>]/g, '');
+            ctx.font = `${gWeight} ${gSize}px ${CONFIG.fonts.main}`;
+            ctx.letterSpacing = "-1px";
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "left"; // 파싱 렌더링을 위해 left 유지 후 시작점 계산
+            
+            const fullLineWidth = ctx.measureText(plainLine).width;
+            let currentX = 500 - (fullLineWidth / 2);
+
+            let chunk = "";
+            for (let j = 0; j < line.length; j++) {
+              const char = line[j];
+              if (char === '<' || char === '>') {
+                if (chunk.length > 0) {
+                  ctx.fillStyle = isHighlightText ? themeColor : "black";
+                  ctx.fillText(chunk, currentX, lineY);
+                  currentX += ctx.measureText(chunk).width;
+                  chunk = "";
+                }
+                isHighlightText = (char === '<');
+              } else { chunk += char; }
             }
-          }
-
-          if (chunk.length > 0) {
-            ctx.fillStyle = isHighlightText ? themeColor : "black"; // 4. 강조 텍스트 색상 & 항목명 텍스트 색상
-            ctx.fillText(chunk, currentX, textStartY + (i * textLineGap));
-          }
-        });
-
-        let priceStartY = groupCenterY - ((group.rows.length - 1) * groupRowGap) / 2;
-        group.rows.forEach((row, rowIndex) => {
-          const rowCenterY = priceStartY + (rowIndex * groupRowGap);
-
-          const groupUnitRightBoundary = endX - group.localMaxPriceWidth - unitPriceGap;
-          if (row.unit) {
-            ctx.font = `800 27px ${CONFIG.fonts.main}`;
-            ctx.letterSpacing = "0px";
-            const unitW = group.maxUnitW;
-            const boxX = groupUnitRightBoundary - unitW;
-
-            ctx.fillStyle = themeColor; // 5. 단위 박스 색상
-            roundRect(ctx, boxX, rowCenterY - 24, unitW, 48, 14);
-            ctx.textAlign = "center"; ctx.fillStyle = "white"; // 단위 텍스트 색상(고정)
-            ctx.fillText(row.unit, boxX + unitW / 2, rowCenterY + 2);
-          }
-
-          const { tokenMeta, totalWidth } = getPriceTokenMeta(ctx, row.price);
-          // isNumber인 토큰은 themeColor, 아닌 경우 black 적용
-          tokenMeta.forEach(m => { if (m.color === null) m.color = themeColor; });
-
-          const baselineY = rowCenterY + 18;
-          let currentX = endX - totalWidth;
-
-          ctx.textBaseline = "alphabetic";
-          ctx.textAlign = "left";
-
-          tokenMeta.forEach(meta => {
-            ctx.font = meta.font;
-            ctx.fillStyle = meta.color;
-            ctx.letterSpacing = meta.letterSpacing;
-            ctx.fillText(meta.text, currentX, baselineY);
-            currentX += meta.width;
+            if (chunk.length > 0) {
+              ctx.fillStyle = isHighlightText ? themeColor : "black";
+              ctx.fillText(chunk, currentX, lineY);
+            }
           });
 
-          ctx.textBaseline = "middle";
-        });
+          // 2. 가격표 묶음 중앙 정렬 (항목명 아래)
+          let accumulatedY = currentY + textSpan + 24;
+          group.rows.forEach(row => {
+            const rowCenterY = accumulatedY + row.rowHeight / 2;
+            accumulatedY += row.rowHeight;
+
+            ctx.font = `${row.priceWeight || 700} ${row.priceSize || 34}px ${CONFIG.fonts.main}`;
+            const { tokenMeta, totalWidth } = getPriceTokenMeta(ctx, row.price, row.priceSize, row.priceWeight);
+            tokenMeta.forEach(m => { if (m.color === null) m.color = themeColor; });
+
+            const uSize = row.unitSize || 18;
+            const unitW = row.unit ? (group.maxUnitW || 0) : 0;
+            const rowTotalW = unitW + (unitW > 0 ? 12 : 0) + totalWidth;
+            let drawX = 500 - (rowTotalW / 2);
+
+            if (row.unit && unitW > 0) {
+              ctx.font = `${row.unitWeight || 800} ${uSize}px ${CONFIG.fonts.main}`;
+              ctx.fillStyle = themeColor;
+              const boxH = Math.round(uSize * 1.8);
+              roundRect(ctx, drawX, rowCenterY - boxH / 2, unitW, boxH, Math.round(uSize * 0.5));
+              ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "white";
+              ctx.fillText(row.unit, drawX + unitW / 2, rowCenterY);
+              drawX += unitW + 12;
+            }
+
+            ctx.textAlign = "left"; ctx.textBaseline = "middle";
+            tokenMeta.forEach(meta => {
+              ctx.font = meta.font; ctx.fillStyle = meta.color; ctx.letterSpacing = meta.letterSpacing;
+              ctx.fillText(meta.text, drawX, rowCenterY);
+              drawX += meta.width;
+            });
+          });
+
+        } else {
+          // ―――― [STANDARD LAYOUT: 좌우 기본 배치] ――――
+          const groupCenterY = currentY + (group.heightSpan / 2);
+          const textSpan = group.lines.length * textLineGap;
+          let textStartY = groupCenterY - ((textSpan - textLineGap) / 2);
+          let isHighlightText = false;
+
+          // 1. 항목명 좌측 정렬 (startX = 105 고정)
+          group.lines.forEach((line, i) => {
+            const lineY = textStartY + (i * textLineGap);
+            let currentX = startX; 
+            let chunk = "";
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "left";
+            ctx.font = `${gWeight} ${gSize}px ${CONFIG.fonts.main}`;
+            ctx.letterSpacing = "-1px";
+
+            for (let j = 0; j < line.length; j++) {
+              const char = line[j];
+              if (char === '<' || char === '>') {
+                if (chunk.length > 0) {
+                  ctx.fillStyle = isHighlightText ? themeColor : "black";
+                  ctx.fillText(chunk, currentX, lineY);
+                  currentX += ctx.measureText(chunk).width;
+                  chunk = "";
+                }
+                isHighlightText = (char === '<');
+              } else { chunk += char; }
+            }
+            if (chunk.length > 0) {
+              ctx.fillStyle = isHighlightText ? themeColor : "black";
+              ctx.fillText(chunk, currentX, lineY);
+            }
+          });
+
+          // 2. 가격표 우측 정렬 (endX = 895 고정)
+          let priceSpan = group.rows.reduce((s, r) => s + r.rowHeight, 0);
+          let accY = groupCenterY - (priceSpan / 2);
+
+          group.rows.forEach(row => {
+            const rowCenterY = accY + (row.rowHeight / 2);
+            accY += row.rowHeight;
+
+            const { tokenMeta, totalWidth } = getPriceTokenMeta(ctx, row.price, row.priceSize, row.priceWeight);
+            tokenMeta.forEach(m => { if (m.color === null) m.color = themeColor; });
+
+            // 가격 렌더링 (우측 정렬)
+            let drawX = endX - totalWidth;
+            ctx.textAlign = "left"; ctx.textBaseline = "middle";
+            tokenMeta.forEach(meta => {
+              ctx.font = meta.font; ctx.fillStyle = meta.color; ctx.letterSpacing = meta.letterSpacing;
+              ctx.fillText(meta.text, drawX, rowCenterY);
+              drawX += meta.width;
+            });
+
+            // 단위 박스 렌더링 (가격 좌측)
+            if (row.unit) {
+              const uSize = row.unitSize || 18;
+              ctx.font = `${row.unitWeight || 800} ${uSize}px ${CONFIG.fonts.main}`;
+              const unitW = group.maxUnitW;
+              const boxX = endX - totalWidth - unitPriceGap - unitW; // 가격 너비와 간격만큼 왼쪽으로 이동
+              ctx.fillStyle = themeColor;
+              const boxH = Math.round(uSize * 1.8);
+              roundRect(ctx, boxX, rowCenterY - boxH / 2, unitW, boxH, Math.round(uSize * 0.5));
+              ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "white";
+              ctx.fillText(row.unit, boxX + unitW / 2, rowCenterY);
+            }
+          });
+        }
 
         if (index < groups.length - 1) {
-          const lineY = currentY + group.heightSpan + 32.5;
+          const groupGap = Math.max(50, Math.round(gSize * 1.8));
+          const lineY = currentY + group.heightSpan + (groupGap / 2);
+          
           ctx.beginPath(); ctx.moveTo(startX, lineY); ctx.lineTo(endX, lineY);
-          ctx.strokeStyle = themeColor; ctx.lineWidth = 1; ctx.stroke(); // 7. 선 색상 (테마 색상 통합)
-          currentY = lineY + 32.5;
+          ctx.strokeStyle = themeColor; ctx.lineWidth = 1; ctx.stroke(); 
+          currentY += group.heightSpan + groupGap;
+        } else {
+          currentY += group.heightSpan;
         }
       });
 
@@ -856,7 +1294,7 @@ let generatedImagesUrls = [];
       ctx.textBaseline = "alphabetic";
       ctx.textAlign = "center";
       ctx.fillStyle = themeColor;
-      ctx.font = `23px 'GmarketSansMedium', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Thai', sans-serif`;
+      ctx.font = `23px ${CONFIG.fonts.sub}`;
       ctx.letterSpacing = "0px";
       ctx.fillText(botText, 500, botTextY);
 
@@ -895,12 +1333,11 @@ let generatedImagesUrls = [];
       });
 
       addSectionTitle('굿바이 Spring 4월 이벤트');
-      addItemRow(`<붓기삭제 종아리 슬림패키지>
-종아리 보톡스 200u + 슬림주사 100cc
-+지방타파레이저 1000샷`, '', '19만9천');
+      addItemRow(`<붓기삭제 종아리 슬림패키지>\n종아리 보톡스 200u + 슬림주사 100cc\n+지방타파레이저 1000샷`, '', '19만9천');
       addItemRow('보톡스', '', '9만');
       addItemRow('필러', '1회', '4만');
       addItemRow('필러', '3회', '11만');
+      addTableGroup([{content: '홍조 레이저\n여드름 케어', price: '149,000원'}, {content: '잡티 색소\n흉터 모공', price: '200,000원'}]);
 
       // SortableJS 초기화
       new Sortable(document.getElementById('itemsContainer'), {
@@ -918,6 +1355,9 @@ let generatedImagesUrls = [];
       if (e.target.classList.contains('item-name') || e.target.classList.contains('section-title-input')) {
         e.target.style.height = 'auto';
         e.target.style.height = e.target.scrollHeight + 'px';
+      }
+      if (e.target.classList.contains('section-title-input')) {
+        renderTabs();
       }
     });
 

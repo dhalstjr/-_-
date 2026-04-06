@@ -1,5 +1,4 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+JP:wght@500;700;800&family=Noto+Sans+SC:wght@500;700;800&family=Noto+Sans+Thai:wght@500;700;800&display=swap');
 
     @font-face {
       font-family: 'GmarketSansMedium';
@@ -195,7 +194,6 @@
       flex-direction: column;
       gap: 12px;
       margin-bottom: 24px;
-      counter-reset: page-counter;
     }
 
     .item-row,
@@ -211,13 +209,14 @@
     }
 
     .item-row {
-      grid-template-columns: 24px 1fr 80px 100px 50px;
+      grid-template-columns: 24px 1.5fr 1fr 1fr 80px;
       gap: 12px;
+      align-items: start;
     }
 
     .section-title-wrapper {
       display: grid;
-      grid-template-columns: 24px 80px 1fr 40px;
+      grid-template-columns: 24px 1fr auto;
       align-items: center;
       gap: 12px;
       background: #e8f3ff;
@@ -227,7 +226,6 @@
       border-radius: 12px;
       position: relative;
       box-shadow: 0 4px 12px rgba(0, 100, 255, 0.05);
-      counter-increment: page-counter;
       transition: all 0.2s ease;
       margin-bottom: 8px;
     }
@@ -248,7 +246,7 @@
     }
 
     .section-title-wrapper::before {
-      content: "PAGE " counter(page-counter);
+      content: attr(data-page-label);
       position: absolute;
       top: -12px;
       left: 20px;
@@ -304,6 +302,158 @@
       min-height: 48px;
       resize: none;
       border-radius: 12px !important;
+    }
+
+    .table-group-row {
+      grid-template-columns: 24px 1fr 80px;
+      align-items: start;
+    }
+
+    .table-group-row .drag-handle {
+      margin-top: 15px;
+    }
+
+    .table-boxes-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .table-box {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: #fafafa;
+      border: 1px solid #E5E8EB;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .box-content {
+      flex: 1.5;
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    .box-price {
+      flex: 1;
+    }
+
+    .btn-add-table-box {
+      margin-top: 4px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px dashed var(--primary);
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-add-table-box:hover {
+      background: #D8E9FF;
+    }
+
+    .btn-add-price-option:hover {
+      background: #d8e9ff !important;
+    }
+
+    .btn-remove-price-option:hover {
+      color: var(--primary) !important;
+    }
+
+    .input-with-controls { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+    .font-controls { display: flex; flex-direction: row; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .compact-controls .fc-label { display: none; }
+    .fc-label { font-size: 11px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+    .fc-size, .fc-weight { height: 30px !important; padding: 3px 6px !important; font-size: 12px !important; border-radius: 6px !important;}
+    .fc-size { width: 50px !important; }
+    .fc-weight { width: 85px !important; cursor: pointer; }
+
+    /* 아코디언 폰트 설정 패널 */
+    .font-settings-panel {
+      grid-column: 1 / -1;
+      display: none;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: #F9FAFB;
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 8px;
+    }
+
+    .setting-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #E5E8EB;
+    }
+
+    .setting-group-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--primary);
+      white-space: nowrap;
+      min-width: 36px;
+    }
+
+    .fc-label { font-size: 11px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+    .fc-size, .fc-weight { height: 28px !important; padding: 2px 6px !important; font-size: 12px !important; border-radius: 6px !important; border: 1px solid #E5E8EB !important; background: #fafafa !important; }
+    .fc-size { width: 52px !important; }
+    .fc-weight { width: 90px !important; cursor: pointer; }
+
+    /* 설정 버튼 */
+    .btn-settings {
+      background: transparent;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      opacity: 0.45;
+      transition: opacity 0.2s ease, transform 0.25s ease;
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-settings:hover {
+      opacity: 1;
+      transform: rotate(45deg);
+      color: var(--primary);
+    }
+
+    .btn-settings.settings-open {
+      opacity: 1;
+      transform: rotate(45deg);
+      color: var(--primary);
+    }
+
+    /* 섹션 타이틀 우측 버튼 그룹 */
+    .section-row-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    /* row-actions 버튼 세로 배치 */
+    .row-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding-top: 4px;
     }
 
     .add-controls {
